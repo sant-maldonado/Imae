@@ -18,11 +18,17 @@ export default function WorkOrderForm() {
     fechaProgramada: '',
     estado: 'pendiente',
   })
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    await createOrden.mutateAsync(form)
-    navigate('/ordenes')
+    setError('')
+    try {
+      await createOrden.mutateAsync(form)
+      navigate('/ordenes')
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   return (
@@ -120,6 +126,9 @@ export default function WorkOrderForm() {
           </div>
 
           <div className="flex gap-3 pt-4">
+            {error && (
+              <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg w-full mb-2">{error}</p>
+            )}
             <button
               type="submit"
               disabled={createOrden.isPending}

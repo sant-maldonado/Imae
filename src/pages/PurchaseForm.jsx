@@ -15,14 +15,20 @@ export default function PurchaseForm() {
     estado: 'pendiente',
     ordenId: null,
   })
+  const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    await createCompra.mutateAsync({
-      ...form,
-      cantidad: Number(form.cantidad),
-    })
-    navigate('/compras')
+    setError('')
+    try {
+      await createCompra.mutateAsync({
+        ...form,
+        cantidad: Number(form.cantidad),
+      })
+      navigate('/compras')
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   return (
@@ -92,6 +98,9 @@ export default function PurchaseForm() {
           </div>
 
           <div className="flex gap-3 pt-4">
+            {error && (
+              <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg w-full mb-2">{error}</p>
+            )}
             <button
               type="submit"
               disabled={createCompra.isPending}
