@@ -2,11 +2,41 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCompras } from '../hooks/useMockData'
 import { estadosCompra } from '../lib/constants'
+import { jsPDF } from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const statusColors = {
   pendiente: 'bg-amber-50 text-amber-700 border-amber-200',
   en_curso: 'bg-blue-50 text-blue-700 border-blue-200',
   recibido: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+}
+
+const pendientesPDF = (compras) => {
+  const doc = new jsPDF()
+  doc.setFontSize(18)
+  doc.text('Compras Pendientes', 14, 22)
+
+  doc.setFontSize(11)
+  doc.text(`Total pendientes: ${compras.length}`, 14, 32)
+
+  autoTable(doc, {
+    startY: 40,
+    head: [['ID', 'Artículo', 'Proveedor', 'Cantidad', 'Unidad', 'Solicitud', 'Entrega']],
+    body: compras.map((c) => [
+      `#${c.id}`,
+      c.articulo,
+      c.proveedor,
+      c.cantidad,
+      c.unidad,
+      c.fechaSolicitud,
+      c.fechaEntrega || '-',
+    ]),
+    theme: 'grid',
+    headStyles: { fillColor: [37, 99, 235] },
+    styles: { fontSize: 9 },
+  })
+
+  doc.save('compras_pendientes.pdf')
 }
 
 export default function Purchases() {
@@ -34,6 +64,14 @@ export default function Purchases() {
               <option key={k} value={k}>{v}</option>
             ))}
           </select>
+          {filtroEstado === 'pendiente' && (
+            <button
+              onClick={() => pendientesPDF(filtradas)}
+              className="bg-slate-700 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors flex items-center gap-1.5"
+            >
+              PDF - Pendientes
+            </button>
+          )}
         </div>
         <Link
           to="/compras/nueva"
