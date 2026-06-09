@@ -64,7 +64,7 @@ export default function WorkOrderForm() {
                 onChange={(e) => setForm({ ...form, equipoId: e.target.value })}
                 className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Seleccionar equipo</option>
+                <option value="">Ninguno</option>
                 {equipos?.map((eq) => (
                   <option key={eq.id} value={eq.id}>{eq.nombre} ({eq.codigo})</option>
                 ))}
