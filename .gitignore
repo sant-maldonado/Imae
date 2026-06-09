@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Project specific
+netlify.toml
+usuarios_supabase.txt
+SISTEMA_LOGIN_PERMISOS.md
