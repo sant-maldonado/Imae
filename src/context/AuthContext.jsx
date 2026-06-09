@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, supabaseUrl } from '../lib/supabase'
 
-const STORAGE_KEY = 'sb-grrcsarbbvexwdlocnqr-auth-token'
+const STORAGE_KEY = `sb-${supabaseUrl.match(/https:\/\/(.+)\.supabase/)[1]}-auth-token`
 
 const AuthContext = createContext(null)
 
@@ -12,10 +12,8 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const safetyTimer = setTimeout(() => {
-      localStorage.removeItem(STORAGE_KEY)
-      localStorage.removeItem(`${STORAGE_KEY}-code-verifier`)
       setLoading(false)
-    }, 8000)
+    }, 15000)
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)

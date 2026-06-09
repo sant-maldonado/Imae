@@ -1,10 +1,14 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 export default function Login() {
-  const { login, register, resetPassword } = useAuth()
+  const { user, login, register, resetPassword } = useAuth()
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (user) navigate('/')
+  }, [user, navigate])
   const [esRegistro, setEsRegistro] = useState(false)
   const [esReset, setEsReset] = useState(false)
   const [email, setEmail] = useState('')
@@ -29,7 +33,6 @@ export default function Login() {
         setError('Registro exitoso. Ya podés iniciar sesión.')
       } else {
         await login(email, password)
-        navigate('/')
       }
     } catch (err) {
       setError(err.message)

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { toCamel, camelize } from '../supabase'
+import { toCamel, camelize, toSnake, snakeize } from '../supabase'
 
 describe('toCamel', () => {
   it('converts snake_case to camelCase', () => {
@@ -50,5 +50,49 @@ describe('camelize', () => {
 
   it('handles undefined', () => {
     expect(camelize(undefined)).toBe(undefined)
+  })
+})
+
+describe('toSnake', () => {
+  it('converts camelCase to snake_case', () => {
+    expect(toSnake('camelCase')).toBe('camel_case')
+  })
+
+  it('handles consecutive uppercase', () => {
+    expect(toSnake('avatarURL')).toBe('avatar_url')
+  })
+
+  it('handles empty string', () => {
+    expect(toSnake('')).toBe('')
+  })
+})
+
+describe('snakeize', () => {
+  it('converts object keys from camelCase to snake_case', () => {
+    const input = { userId: 1, fullName: 'Test' }
+    const expected = { user_id: 1, full_name: 'Test' }
+    expect(snakeize(input)).toEqual(expected)
+  })
+
+  it('handles arrays of objects', () => {
+    const input = [{ teamId: 1 }, { teamId: 2 }]
+    const expected = [{ team_id: 1 }, { team_id: 2 }]
+    expect(snakeize(input)).toEqual(expected)
+  })
+
+  it('handles nested objects', () => {
+    const input = { user: { profilePic: 'a.jpg' } }
+    const expected = { user: { profile_pic: 'a.jpg' } }
+    expect(snakeize(input)).toEqual(expected)
+  })
+
+  it('returns primitives as-is', () => {
+    expect(snakeize('hello')).toBe('hello')
+    expect(snakeize(42)).toBe(42)
+    expect(snakeize(null)).toBe(null)
+  })
+
+  it('handles undefined', () => {
+    expect(snakeize(undefined)).toBe(undefined)
   })
 })

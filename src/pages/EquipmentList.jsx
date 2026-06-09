@@ -1,17 +1,6 @@
 import { Link } from 'react-router-dom'
-import { useEquipos } from '../hooks/useMockData'
-
-const estadoColors = {
-  operativo: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  averiado: 'bg-red-100 text-red-700 border-red-200',
-  mantenimiento: 'bg-amber-100 text-amber-700 border-amber-200',
-}
-
-const estadoLabels = {
-  operativo: 'Operativo',
-  averiado: 'Averiado',
-  mantenimiento: 'En Mantenimiento',
-}
+import { useEquipos } from '../hooks/useApi'
+import { estadoColors, estadoLabels, formatDate } from '../lib/constants'
 
 export default function EquipmentList() {
   const { data: equipos, isLoading } = useEquipos()
@@ -40,7 +29,7 @@ export default function EquipmentList() {
             <p className="text-xs text-slate-500 mt-1">{equipo.codigo}</p>
             <p className="text-xs text-slate-400 mt-2">{equipo.ubicacion}</p>
             <div className="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500">
-              <p>Próx. mantenimiento: {equipo.proximoMantenimiento}</p>
+              <p>Próx. mantenimiento: {formatDate(equipo.proximoMantenimiento)}</p>
             </div>
           </Link>
         ))}

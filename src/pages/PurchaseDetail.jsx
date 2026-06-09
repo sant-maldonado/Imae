@@ -1,20 +1,17 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useCompra, useDeleteCompra } from '../hooks/useMockData'
-import { estadosCompra } from '../lib/constants'
+import { useCompra, useDeleteCompra, useUpdateCompra } from '../hooks/useApi'
+import { estadosCompra, statusCompraColors, formatDate } from '../lib/constants'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-
-const statusColors = {
-  pendiente: 'bg-amber-50 text-amber-700 border-amber-200',
-  en_curso: 'bg-blue-50 text-blue-700 border-blue-200',
-  recibido: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-}
+import { useToast } from '../components/Toast'
 
 export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data: compra, isLoading } = useCompra(id)
   const deleteCompra = useDeleteCompra()
+  const updateCompra = useUpdateCompra()
+  const toast = useToast()
 
   if (isLoading) return <div className="text-slate-500">Cargando compra...</div>
   if (!compra) return <div className="text-slate-500">Compra no encontrada</div>
@@ -22,7 +19,17 @@ export default function PurchaseDetail() {
   const handleDelete = async () => {
     if (confirm('¿Eliminar esta orden de compra?')) {
       await deleteCompra.mutateAsync(id)
+      toast.success('Orden de compra eliminada')
       navigate('/compras')
+    }
+  }
+
+  const handleEstadoChange = async (nuevoEstado) => {
+    try {
+      await updateCompra.mutateAsync({ id, data: { estado: nuevoEstado } })
+      toast.success(`Estado cambiado a ${estadosCompra[nuevoEstado]}`)
+    } catch (err) {
+      toast.error(err.message)
     }
   }
 
@@ -76,9 +83,19 @@ export default function PurchaseDetail() {
         <div className="flex flex-col sm:flex-row items-start gap-3 mb-6">
           <div className="flex-1">
             <h3 className="text-lg md:text-xl font-semibold text-slate-800">{compra.articulo}</h3>
-            <p className="text-sm text-slate-500 mt-1">Solicitada el {compra.fechaSolicitud}</p>
+            <p className="text-sm text-slate-500 mt-1">Solicitada el {formatDate(compra.fechaSolicitud)}</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
+            {compra.estado === 'pendiente' && (
+              <button onClick={() => handleEstadoChange('en_curso')} className="bg-amber-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors">
+                Marcar En Curso
+              </button>
+            )}
+            {compra.estado === 'en_curso' && (
+              <button onClick={() => handleEstadoChange('recibido')} className="bg-emerald-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors">
+                Marcar Recibido
+              </button>
+            )}
             <button
               onClick={generarPDF}
               className="bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
@@ -97,7 +114,7 @@ export default function PurchaseDetail() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <p className="text-slate-500 mb-1">Estado</p>
-            <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full border ${statusColors[compra.estado]}`}>
+            <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full border ${statusCompraColors[compra.estado]}`}>
               {estadosCompra[compra.estado]}
             </span>
           </div>
@@ -111,7 +128,7 @@ export default function PurchaseDetail() {
           </div>
           <div>
             <p className="text-slate-500 mb-1">Fecha de entrega</p>
-            <p className="font-medium text-slate-700">{compra.fechaEntrega || 'Pendiente'}</p>
+            <p className="font-medium text-slate-700">{formatDate(compra.fechaEntrega) || 'Pendiente'}</p>
           </div>
         </div>
       </div>

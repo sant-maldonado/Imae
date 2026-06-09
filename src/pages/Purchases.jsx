@@ -1,15 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useCompras } from '../hooks/useMockData'
-import { estadosCompra } from '../lib/constants'
+import { useCompras } from '../hooks/useApi'
+import { estadosCompra, statusCompraColors, formatDate } from '../lib/constants'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-
-const statusColors = {
-  pendiente: 'bg-amber-50 text-amber-700 border-amber-200',
-  en_curso: 'bg-blue-50 text-blue-700 border-blue-200',
-  recibido: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-}
 
 const pendientesPDF = (compras) => {
   const doc = new jsPDF()
@@ -103,10 +97,10 @@ export default function Purchases() {
                 <td className="px-4 py-3 font-medium text-slate-800">{compra.articulo}</td>
                 <td className="px-4 py-3 text-slate-600">{compra.proveedor}</td>
                 <td className="px-4 py-3 text-slate-600">{compra.cantidad} {compra.unidad}</td>
-                <td className="px-4 py-3 text-slate-500">{compra.fechaSolicitud}</td>
-                <td className="px-4 py-3 text-slate-500">{compra.fechaEntrega || '-'}</td>
+                <td className="px-4 py-3 text-slate-500">{formatDate(compra.fechaSolicitud)}</td>
+                <td className="px-4 py-3 text-slate-500">{formatDate(compra.fechaEntrega) || '-'}</td>
                 <td className="px-4 py-3">
-                  <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full border ${statusColors[compra.estado]}`}>
+                  <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full border ${statusCompraColors[compra.estado]}`}>
                     {estadosCompra[compra.estado]}
                   </span>
                 </td>

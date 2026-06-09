@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = 'https://grrcsarbbvexwdlocnqr.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdycmNzYXJiYnZleHdkbG9jbnFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MDk3ODIsImV4cCI6MjA5NTQ4NTc4Mn0.jk7F4yBkh31D6VQ9pPyb8gcIkRnwgeR2DHjwNYSWCgM'
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Faltan VITE_SUPABASE_URL y VITE_SUPABASE_ANON_KEY en .env')
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -20,7 +24,7 @@ export function camelize(val) {
 }
 
 export function toSnake(str) {
-  return str.replace(/[A-Z]/g, (c) => '_' + c.toLowerCase())
+  return str.replace(/([a-z])([A-Z])/g, '$1_$2').toLowerCase()
 }
 
 export function snakeize(val) {

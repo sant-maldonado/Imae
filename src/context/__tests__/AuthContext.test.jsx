@@ -12,6 +12,7 @@ const { mockGetSession, mockGetUser, mockSignIn, mockSignUp, mockSignOut, mockFr
 }))
 
 vi.mock('../../lib/supabase', () => ({
+  supabaseUrl: 'https://test.supabase.co',
   supabase: {
     auth: {
       getSession: mockGetSession,

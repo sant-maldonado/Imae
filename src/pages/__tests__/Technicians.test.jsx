@@ -8,7 +8,7 @@ const mockTecnicos = [
   { id: 2, nombre: 'Ana Martínez', especialidad: 'Electricidad', telefono: '555-0102', email: 'ana@test.com', activo: false, avatarUrl: null },
 ]
 
-vi.mock('../../hooks/useMockData', () => ({
+vi.mock('../../hooks/useApi', () => ({
   useTecnicos: () => ({ data: mockTecnicos, isLoading: false }),
 }))
 

@@ -1,22 +1,9 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { useOrdenes, useTecnicos } from '../hooks/useMockData'
-import { estados, prioridades } from '../lib/constants'
+import { useOrdenes, useTecnicos } from '../hooks/useApi'
+import { estados, prioridades, priorityColors, statusColors, formatDate } from '../lib/constants'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-
-const priorityColors = {
-  urgente: 'bg-red-100 text-red-700 border-red-200',
-  alta: 'bg-amber-100 text-amber-700 border-amber-200',
-  media: 'bg-blue-100 text-blue-700 border-blue-200',
-  baja: 'bg-slate-100 text-slate-700 border-slate-200',
-}
-
-const statusColors = {
-  pendiente: 'bg-amber-50 text-amber-700 border-amber-200',
-  en_progreso: 'bg-blue-50 text-blue-700 border-blue-200',
-  completada: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-}
 
 export default function WorkOrders() {
   const { data: ordenes, isLoading } = useOrdenes()
@@ -25,8 +12,11 @@ export default function WorkOrders() {
   const [filtroPrioridad, setFiltroPrioridad] = useState('')
   const [filtroTecnico, setFiltroTecnico] = useState('')
 
-  const tecnicosMap = {}
-  tecnicos?.forEach((t) => { tecnicosMap[t.id] = t.nombre })
+  const tecnicosMap = useMemo(() => {
+    const map = {}
+    tecnicos?.forEach((t) => { map[t.id] = t.nombre })
+    return map
+  }, [tecnicos])
 
   const pendientesTecnico = useMemo(() => {
     if (!filtroTecnico || !ordenes) return []
@@ -154,7 +144,7 @@ export default function WorkOrders() {
                     {estados[orden.estado]}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-500">{orden.fechaProgramada}</td>
+                <td className="px-4 py-3 text-slate-500">{formatDate(orden.fechaProgramada)}</td>
                 <td className="px-4 py-3">
                   <Link to={`/ordenes/${orden.id}`} className="text-blue-600 hover:text-blue-800 text-xs font-medium">
                     Ver detalle

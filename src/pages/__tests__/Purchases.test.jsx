@@ -8,8 +8,10 @@ const mockCompras = [
   { id: 2, articulo: 'Aceite ISO 46', proveedor: 'Suministros SA', cantidad: 20, unidad: 'litros', fechaSolicitud: '2026-05-20', fechaEntrega: null, estado: 'pendiente' },
 ]
 
-vi.mock('../../hooks/useMockData', () => ({
-  useCompras: () => ({ data: mockCompras, isLoading: false }),
+let mockLoading = false
+
+vi.mock('../../hooks/useApi', () => ({
+  useCompras: () => ({ data: mockCompras, isLoading: mockLoading }),
 }))
 
 describe('Purchases page', () => {
@@ -33,7 +35,8 @@ describe('Purchases page', () => {
   })
 
   it('shows loading state', () => {
-    vi.mocked(vi.importActual('../../hooks/useMockData'))
+    mockLoading = true
     render(<Purchases />, { wrapper: TestWrapper })
+    expect(screen.getByText('Cargando compras...')).toBeInTheDocument()
   })
 })

@@ -6,7 +6,7 @@ import WorkOrders from '../WorkOrders'
 const mockUseOrdenes = vi.fn()
 const mockUseTecnicos = vi.fn()
 
-vi.mock('../../hooks/useMockData', () => ({
+vi.mock('../../hooks/useApi', () => ({
   useOrdenes: (...args) => mockUseOrdenes(...args),
   useTecnicos: (...args) => mockUseTecnicos(...args),
 }))

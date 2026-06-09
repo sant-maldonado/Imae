@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCreateOrden, useEquipos, useTecnicos } from '../hooks/useMockData'
+import { useCreateOrden, useEquipos, useTecnicos } from '../hooks/useApi'
+import { useToast } from '../components/Toast'
 
 export default function WorkOrderForm() {
   const navigate = useNavigate()
+  const toast = useToast()
   const { data: equipos } = useEquipos()
   const { data: tecnicos } = useTecnicos()
   const createOrden = useCreateOrden()
@@ -25,6 +27,7 @@ export default function WorkOrderForm() {
     setError('')
     try {
       await createOrden.mutateAsync(form)
+      toast.success('Orden de trabajo creada')
       navigate('/ordenes')
     } catch (err) {
       setError(err.message)

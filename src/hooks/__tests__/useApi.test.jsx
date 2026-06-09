@@ -18,7 +18,7 @@ beforeEach(() => {
 describe('useOrdenes', () => {
   it('calls fetchOrdenes and returns data', async () => {
     mockFetchOrdenes.mockResolvedValue([{ id: 1, titulo: 'Test' }])
-    const { useOrdenes } = await import('../useMockData')
+    const { useOrdenes } = await import('../useApi')
     const { result } = renderHook(() => useOrdenes(), { wrapper })
     await waitFor(() => expect(result.current.isSuccess).toBe(true))
     expect(result.current.data).toEqual([{ id: 1, titulo: 'Test' }])
@@ -29,7 +29,7 @@ describe('useOrdenes', () => {
 describe('useCreateOrden', () => {
   it('calls createOrden and invalidates query', async () => {
     mockCreateOrden.mockResolvedValue({ id: 2 })
-    const { useCreateOrden, useOrdenes } = await import('../useMockData')
+    const { useCreateOrden, useOrdenes } = await import('../useApi')
 
     mockFetchOrdenes.mockResolvedValue([{ id: 1 }])
 

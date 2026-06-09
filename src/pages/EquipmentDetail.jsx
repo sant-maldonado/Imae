@@ -1,24 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
-import { useEquipo, useOrdenes } from '../hooks/useMockData'
-import { estados, prioridades } from '../lib/constants'
-
-const estadoColors = {
-  operativo: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-  averiado: 'bg-red-100 text-red-700 border-red-200',
-  mantenimiento: 'bg-amber-100 text-amber-700 border-amber-200',
-}
-
-const estadoLabels = {
-  operativo: 'Operativo',
-  averiado: 'Averiado',
-  mantenimiento: 'En Mantenimiento',
-}
-
-const statusColors = {
-  pendiente: 'bg-amber-50 text-amber-700 border-amber-200',
-  en_progreso: 'bg-blue-50 text-blue-700 border-blue-200',
-  completada: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-}
+import { useEquipo, useOrdenes } from '../hooks/useApi'
+import { estados, prioridades, estadoColors, estadoLabels, statusColors, formatDate } from '../lib/constants'
 
 export default function EquipmentDetail() {
   const { id } = useParams()
@@ -50,11 +32,11 @@ export default function EquipmentDetail() {
           </div>
           <div>
             <p className="text-slate-500">Último mantenimiento</p>
-            <p className="font-medium text-slate-700 mt-1">{equipo.ultimoMantenimiento}</p>
+            <p className="font-medium text-slate-700 mt-1">{formatDate(equipo.ultimoMantenimiento)}</p>
           </div>
           <div>
             <p className="text-slate-500">Próximo mantenimiento</p>
-            <p className="font-medium text-slate-700 mt-1">{equipo.proximoMantenimiento}</p>
+            <p className="font-medium text-slate-700 mt-1">{formatDate(equipo.proximoMantenimiento)}</p>
           </div>
         </div>
       </div>
@@ -73,7 +55,7 @@ export default function EquipmentDetail() {
               >
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-slate-700 truncate">{orden.titulo}</p>
-                  <p className="text-xs text-slate-400 mt-0.5">{orden.fechaProgramada}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{formatDate(orden.fechaProgramada)}</p>
                 </div>
                 <div className="flex gap-1.5 shrink-0">
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${statusColors[orden.estado]}`}>

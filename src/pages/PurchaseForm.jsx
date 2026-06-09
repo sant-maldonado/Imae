@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useCreateCompra } from '../hooks/useMockData'
+import { useCreateCompra } from '../hooks/useApi'
+import { useToast } from '../components/Toast'
 
 export default function PurchaseForm() {
   const navigate = useNavigate()
+  const toast = useToast()
   const createCompra = useCreateCompra()
 
   const [form, setForm] = useState({
@@ -25,6 +27,7 @@ export default function PurchaseForm() {
         ...form,
         cantidad: Number(form.cantidad),
       })
+      toast.success('Orden de compra creada')
       navigate('/compras')
     } catch (err) {
       setError(err.message)

@@ -1,21 +1,9 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useOrden, useDeleteOrden, useUpdateOrden } from '../hooks/useMockData'
-import { estados, prioridades, tiposMantenimiento } from '../lib/constants'
+import { useOrden, useDeleteOrden, useUpdateOrden } from '../hooks/useApi'
+import { estados, prioridades, tiposMantenimiento, priorityColors, statusColors, formatDate } from '../lib/constants'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
-
-const priorityColors = {
-  urgente: 'bg-red-100 text-red-700 border-red-200',
-  alta: 'bg-amber-100 text-amber-700 border-amber-200',
-  media: 'bg-blue-100 text-blue-700 border-blue-200',
-  baja: 'bg-slate-100 text-slate-700 border-slate-200',
-}
-
-const statusColors = {
-  pendiente: 'bg-amber-50 text-amber-700 border-amber-200',
-  en_progreso: 'bg-blue-50 text-blue-700 border-blue-200',
-  completada: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-}
+import { useToast } from '../components/Toast'
 
 export default function WorkOrderDetail() {
   const { id } = useParams()
@@ -23,6 +11,7 @@ export default function WorkOrderDetail() {
   const { data: orden, isLoading } = useOrden(id)
   const deleteOrden = useDeleteOrden()
   const updateOrden = useUpdateOrden()
+  const toast = useToast()
 
   if (isLoading) return <div className="text-slate-500">Cargando orden...</div>
   if (!orden) return <div className="text-slate-500">Orden no encontrada</div>
@@ -30,6 +19,7 @@ export default function WorkOrderDetail() {
   const handleDelete = async () => {
     if (confirm('¿Eliminar esta orden de trabajo?')) {
       await deleteOrden.mutateAsync(id)
+      toast.success('Orden eliminada')
       navigate('/ordenes')
     }
   }
@@ -82,6 +72,7 @@ export default function WorkOrderDetail() {
       id,
       data: { estado: 'completada', fechaCompletada: new Date().toISOString().split('T')[0] },
     })
+    toast.success('Orden completada')
   }
 
   return (
@@ -96,7 +87,7 @@ export default function WorkOrderDetail() {
         <div className="flex flex-col sm:flex-row items-start gap-3 mb-6">
           <div className="flex-1">
             <h3 className="text-lg md:text-xl font-semibold text-slate-800">{orden.titulo}</h3>
-            <p className="text-sm text-slate-500 mt-1">Creada el {orden.fechaCreacion}</p>
+            <p className="text-sm text-slate-500 mt-1">Creada el {formatDate(orden.fechaCreacion)}</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             {orden.estado !== 'completada' && (
@@ -149,12 +140,12 @@ export default function WorkOrderDetail() {
           </div>
           <div>
             <p className="text-slate-500 mb-1">Fecha programada</p>
-            <p className="font-medium text-slate-700">{orden.fechaProgramada}</p>
+            <p className="font-medium text-slate-700">{formatDate(orden.fechaProgramada)}</p>
           </div>
           {orden.fechaCompletada && (
             <div className="col-span-2">
               <p className="text-slate-500 mb-1">Fecha de completación</p>
-              <p className="font-medium text-slate-700">{orden.fechaCompletada}</p>
+              <p className="font-medium text-slate-700">{formatDate(orden.fechaCompletada)}</p>
             </div>
           )}
           <div className="col-span-2">

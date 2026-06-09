@@ -37,13 +37,13 @@ CREATE POLICY avatares_select ON storage.objects FOR SELECT
   USING (bucket_id = 'avatares' AND auth.role() = 'authenticated');
 
 CREATE POLICY avatares_insert ON storage.objects FOR INSERT
-  WITH CHECK (bucket_id = 'avatares' AND auth.role() = 'authenticated');
+  WITH CHECK (bucket_id = 'avatares' AND auth.role() = 'authenticated' AND split_part(name, '.', 1) = auth.uid()::text);
 
 CREATE POLICY avatares_update ON storage.objects FOR UPDATE
-  USING (bucket_id = 'avatares' AND auth.role() = 'authenticated');
+  USING (bucket_id = 'avatares' AND auth.role() = 'authenticated' AND split_part(name, '.', 1) = auth.uid()::text);
 
 CREATE POLICY avatares_delete ON storage.objects FOR DELETE
-  USING (bucket_id = 'avatares' AND auth.role() = 'authenticated');
+  USING (bucket_id = 'avatares' AND auth.role() = 'authenticated' AND split_part(name, '.', 1) = auth.uid()::text);
 
 -- 2. TABLAS
 
@@ -144,7 +144,9 @@ CREATE POLICY equipos_delete ON public.equipos FOR DELETE USING (
 
 -- TECNICOS
 CREATE POLICY tecnicos_select ON public.tecnicos FOR SELECT USING (auth.role() = 'authenticated');
-CREATE POLICY tecnicos_insert ON public.tecnicos FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY tecnicos_insert ON public.tecnicos FOR INSERT WITH CHECK (
+  auth.role() = 'authenticated' AND created_by = auth.uid()
+);
 CREATE POLICY tecnicos_update ON public.tecnicos FOR UPDATE USING (
   EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
 );

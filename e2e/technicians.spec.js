@@ -4,7 +4,7 @@ test.describe('Technicians', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login')
     await page.fill('input[type="email"]', 'admin@ejemplo.com')
-    await page.fill('input[type="password"]', 'admin123')
+    await page.fill('input[type="password"]', 'CHANGE-ME')
     await page.click('button[type="submit"]')
     await expect(page).toHaveURL('/')
   })

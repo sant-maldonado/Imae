@@ -7,7 +7,7 @@ import PurchaseForm from '../PurchaseForm'
 const mockMutateAsync = vi.fn()
 const mockNavigate = vi.fn()
 
-vi.mock('../../hooks/useMockData', () => ({
+vi.mock('../../hooks/useApi', () => ({
   useCreateCompra: () => ({ mutateAsync: mockMutateAsync, isPending: false }),
 }))
 

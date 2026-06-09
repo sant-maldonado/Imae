@@ -1,4 +1,4 @@
-import { useTecnicos } from '../hooks/useMockData'
+import { useTecnicos } from '../hooks/useApi'
 
 export default function Technicians() {
   const { data: tecnicos, isLoading } = useTecnicos()

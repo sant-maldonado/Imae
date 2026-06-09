@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import { HiOutlineLockClosed } from 'react-icons/hi2'
+import { useToast } from '../components/Toast'
 
 function resizeImage(file, maxSize) {
   return new Promise((resolve) => {
@@ -45,6 +46,7 @@ export default function Profile() {
   const [passError, setPassError] = useState('')
   const [passSuccess, setPassSuccess] = useState('')
   const [passLoading, setPassLoading] = useState(false)
+  const toast = useToast()
 
   const nombre = perfil?.nombre || user?.email?.split('@')[0] || 'Usuario'
   const email = user?.email || ''
@@ -75,6 +77,7 @@ export default function Profile() {
     try {
       await changePassword(currentPass, newPass)
       setPassSuccess('Contraseña actualizada')
+      toast.success('Contraseña actualizada')
       setCurrentPass('')
       setNewPass('')
       setConfirmPass('')
@@ -105,7 +108,7 @@ export default function Profile() {
 
       await refreshPerfil()
     } catch (err) {
-      alert(err.message || 'Error al subir la foto')
+      toast.error(err.message || 'Error al subir la foto')
     } finally {
       setUploading(false)
     }

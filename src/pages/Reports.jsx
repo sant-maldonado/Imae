@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useOrdenes, useEquipos, useTecnicos, useDashboardStats } from '../hooks/useMockData'
+import { useOrdenes, useEquipos, useTecnicos, useDashboardStats } from '../hooks/useApi'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
 const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444']
