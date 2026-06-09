@@ -1,39 +1,9 @@
 import { useState, useRef } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { uploadToCloudinary } from '../lib/cloudinary'
 import { HiOutlineLockClosed } from 'react-icons/hi2'
 import { useToast } from '../components/Toast'
-
-function resizeImage(file, maxSize) {
-  return new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const img = new Image()
-      img.onload = () => {
-        const canvas = document.createElement('canvas')
-        let { width, height } = img
-        if (width > height) {
-          if (width > maxSize) {
-            height = Math.round((height * maxSize) / width)
-            width = maxSize
-          }
-        } else {
-          if (height > maxSize) {
-            width = Math.round((width * maxSize) / height)
-            height = maxSize
-          }
-        }
-        canvas.width = width
-        canvas.height = height
-        const ctx = canvas.getContext('2d')
-        ctx.drawImage(img, 0, 0, width, height)
-        canvas.toBlob(resolve, 'image/jpeg', 0.8)
-      }
-      img.src = e.target.result
-    }
-    reader.readAsDataURL(file)
-  })
-}
 
 export default function Profile() {
   const { user, perfil, refreshPerfil, changePassword } = useAuth()
@@ -95,15 +65,9 @@ export default function Profile() {
 
     setUploading(true)
     try {
-      const resized = await resizeImage(file, 200)
-      const fileName = `${user.id}.jpg`
+      const url = await uploadToCloudinary(file)
 
-      const { error: uploadError } = await supabase.storage.from('avatares').upload(fileName, resized, { upsert: true })
-      if (uploadError) throw uploadError
-
-      const { data: { publicUrl } } = supabase.storage.from('avatares').getPublicUrl(fileName)
-
-      const { error: updateError } = await supabase.from('perfiles').update({ avatar_url: publicUrl }).eq('id', user.id)
+      const { error: updateError } = await supabase.from('perfiles').update({ avatar_url: url }).eq('id', user.id)
       if (updateError) throw updateError
 
       await refreshPerfil()

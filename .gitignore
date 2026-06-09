@@ -30,3 +30,5 @@ usuarios_supabase.txt
 SISTEMA_LOGIN_PERMISOS.md
 test-results/
 playwright-report/
+
+.vercel

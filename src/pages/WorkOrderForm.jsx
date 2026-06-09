@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCreateOrden, useEquipos, useTecnicos } from '../hooks/useApi'
+import { supabase } from '../lib/supabase'
+import { uploadToCloudinary } from '../lib/cloudinary'
 import { useToast } from '../components/Toast'
+import PhotoUploader from '../components/PhotoUploader'
 
 export default function WorkOrderForm() {
   const navigate = useNavigate()
@@ -20,13 +23,28 @@ export default function WorkOrderForm() {
     fechaProgramada: '',
     estado: 'pendiente',
   })
+  const [fotos, setFotos] = useState([])
   const [error, setError] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     try {
-      await createOrden.mutateAsync(form)
+      const orden = await createOrden.mutateAsync(form)
+      const ordenId = orden.id
+
+      if (fotos.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser()
+        for (const foto of fotos) {
+          const url = await uploadToCloudinary(foto.file)
+
+          const { error: dbError } = await supabase
+            .from('fotos_orden')
+            .insert({ orden_id: ordenId, url, nombre: foto.nombre, descripcion: foto.descripcion || null, created_by: user.id })
+          if (dbError) throw dbError
+        }
+      }
+
       toast.success('Orden de trabajo creada')
       navigate('/ordenes')
     } catch (err) {
@@ -126,6 +144,8 @@ export default function WorkOrderForm() {
               />
             </div>
           </div>
+
+          <PhotoUploader fotos={fotos} setFotos={setFotos} />
 
           <div className="flex gap-3 pt-4">
             {error && (

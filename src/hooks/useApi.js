@@ -81,6 +81,26 @@ export function useDeleteCompra() {
   })
 }
 
+export function useFotos(ordenId) {
+  return useQuery({ queryKey: ['fotos', ordenId], queryFn: () => api.fetchFotos(ordenId), enabled: !!ordenId })
+}
+
+export function useCreateFoto() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: api.createFoto,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fotos'] }),
+  })
+}
+
+export function useDeleteFoto() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: api.deleteFoto,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fotos'] }),
+  })
+}
+
 export function useDashboardStats() {
   return useQuery({ queryKey: ['dashboardStats'], queryFn: api.fetchDashboardStats })
 }

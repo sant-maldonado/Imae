@@ -109,6 +109,32 @@ CREATE TABLE IF NOT EXISTS public.compras (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS public.fotos_orden (
+  id          SERIAL PRIMARY KEY,
+  orden_id    INTEGER NOT NULL REFERENCES public.ordenes(id) ON DELETE CASCADE,
+  url         TEXT NOT NULL,
+  nombre      TEXT,
+  descripcion TEXT,
+  created_by  UUID REFERENCES public.perfiles(id),
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+-- Bucket para fotos de orden
+INSERT INTO storage.buckets (id, name, public) VALUES ('fotos_orden', 'fotos_orden', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY fotos_orden_select ON storage.objects FOR SELECT
+  USING (bucket_id = 'fotos_orden' AND auth.role() = 'authenticated');
+
+CREATE POLICY fotos_orden_insert ON storage.objects FOR INSERT
+  WITH CHECK (bucket_id = 'fotos_orden' AND auth.role() = 'authenticated');
+
+CREATE POLICY fotos_orden_update ON storage.objects FOR UPDATE
+  USING (bucket_id = 'fotos_orden' AND auth.role() = 'authenticated');
+
+CREATE POLICY fotos_orden_delete ON storage.objects FOR DELETE
+  USING (bucket_id = 'fotos_orden' AND auth.role() = 'authenticated');
+
 -- 3. RLS - ENABLE
 
 ALTER TABLE public.perfiles ENABLE ROW LEVEL SECURITY;
@@ -116,6 +142,7 @@ ALTER TABLE public.equipos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.tecnicos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ordenes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.compras ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.fotos_orden ENABLE ROW LEVEL SECURITY;
 
 -- 4. RLS - POLICIES
 
@@ -177,6 +204,20 @@ CREATE POLICY compras_update ON public.compras FOR UPDATE USING (
 );
 CREATE POLICY compras_delete ON public.compras FOR DELETE USING (
   EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol = 'admin')
+);
+
+-- FOTOS_ORDEN
+CREATE POLICY fotos_orden_select ON public.fotos_orden FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY fotos_orden_insert ON public.fotos_orden FOR INSERT WITH CHECK (
+  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor', 'tecnico'))
+);
+CREATE POLICY fotos_orden_update ON public.fotos_orden FOR UPDATE USING (
+  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
+  OR created_by = auth.uid()
+);
+CREATE POLICY fotos_orden_delete ON public.fotos_orden FOR DELETE USING (
+  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol = 'admin')
+  OR created_by = auth.uid()
 );
 
 -- 5. SEED DATA

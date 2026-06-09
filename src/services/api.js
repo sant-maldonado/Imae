@@ -96,6 +96,21 @@ export async function deleteCompra(id) {
   return true
 }
 
+export async function fetchFotos(ordenId) {
+  return exec(supabase.from('fotos_orden').select('*').eq('orden_id', ordenId).order('id', { ascending: true }))
+}
+
+export async function createFoto(data) {
+  const { data: { user } } = await supabase.auth.getUser()
+  return exec(supabase.from('fotos_orden').insert({ ...snakeize(cleanEmpty(data)), created_by: user.id }).select().single())
+}
+
+export async function deleteFoto(id) {
+  const { error } = await supabase.from('fotos_orden').delete().eq('id', id)
+  if (error) throw error
+  return true
+}
+
 export async function fetchDashboardStats() {
   const [ordenes, equipos, tecnicos] = await Promise.all([
     exec(supabase.from('ordenes').select('*')),

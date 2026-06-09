@@ -4,6 +4,7 @@ import { estados, prioridades, tiposMantenimiento, priorityColors, statusColors,
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { useToast } from '../components/Toast'
+import PhotoGallery from '../components/PhotoGallery'
 
 export default function WorkOrderDetail() {
   const { id } = useParams()
@@ -154,6 +155,8 @@ export default function WorkOrderDetail() {
           </div>
         </div>
       </div>
+
+      <PhotoGallery ordenId={id} />
     </div>
   )
 }
