@@ -17,6 +17,7 @@ export default function EquipmentList() {
   const { data: equipos, isLoading } = useEquipos()
 
   if (isLoading) return <div className="text-slate-500">Cargando equipos...</div>
+  if (!equipos) return <div className="text-red-500">Error al cargar equipos</div>
 
   return (
     <div>

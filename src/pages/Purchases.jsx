@@ -44,6 +44,7 @@ export default function Purchases() {
   const [filtroEstado, setFiltroEstado] = useState('')
 
   if (isLoading) return <div className="text-slate-500">Cargando compras...</div>
+  if (!compras) return <div className="text-red-500">Error al cargar compras</div>
 
   const filtradas = compras.filter((c) => {
     if (filtroEstado && c.estado !== filtroEstado) return false

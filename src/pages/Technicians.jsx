@@ -4,6 +4,7 @@ export default function Technicians() {
   const { data: tecnicos, isLoading } = useTecnicos()
 
   if (isLoading) return <div className="text-slate-500">Cargando técnicos...</div>
+  if (!tecnicos) return <div className="text-red-500">Error al cargar técnicos</div>
 
   return (
     <div>
