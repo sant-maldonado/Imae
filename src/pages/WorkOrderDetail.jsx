@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useOrden, useDeleteOrden, useUpdateOrden } from '../hooks/useApi'
+import { useOrden, useDeleteOrden, useUpdateOrden, useFotos } from '../hooks/useApi'
 import { estados, prioridades, tiposMantenimiento, priorityColors, statusColors, formatDate } from '../lib/constants'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -10,6 +10,7 @@ export default function WorkOrderDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data: orden, isLoading } = useOrden(id)
+  const { data: fotos } = useFotos(id)
   const deleteOrden = useDeleteOrden()
   const updateOrden = useUpdateOrden()
   const toast = useToast()
@@ -25,7 +26,21 @@ export default function WorkOrderDetail() {
     }
   }
 
-  const generarPDF = () => {
+  const loadImg = (url) => new Promise((resolve, reject) => {
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+    img.onload = () => {
+      const c = document.createElement('canvas')
+      c.width = img.width
+      c.height = img.height
+      c.getContext('2d').drawImage(img, 0, 0)
+      resolve(c)
+    }
+    img.onerror = reject
+    img.src = url
+  })
+
+  const generarPDF = async () => {
     const doc = new jsPDF()
     const estadoLabel = estados[orden.estado]
     const prioridadLabel = prioridades[orden.prioridad]
@@ -64,6 +79,49 @@ export default function WorkOrderDetail() {
     doc.setFontSize(10)
     const descLines = doc.splitTextToSize(orden.descripcion, 180)
     doc.text(descLines, 14, doc.lastAutoTable.finalY + 20)
+
+    if (fotos && fotos.length > 0) {
+      let y = doc.lastAutoTable.finalY + 20 + descLines.length * 5 + 8
+      const pageH = doc.internal.pageSize.getHeight()
+
+      if (y > pageH - 40) {
+        doc.addPage()
+        y = 20
+      }
+
+      doc.setFontSize(12)
+      doc.text('Fotos de avance', 14, y)
+      y += 8
+
+      const imgW = 85
+      const imgH = 60
+      const gap = 10
+
+      for (let i = 0; i < fotos.length; i++) {
+        const col = i % 2
+        const row = Math.floor(i / 2)
+        const x = 14 + col * (imgW + gap)
+        let iy = y + row * (imgH + 14)
+
+        if (iy + imgH > pageH - 20) {
+          doc.addPage()
+          iy = 20
+        }
+
+        try {
+          const canvas = await loadImg(fotos[i].url)
+          doc.addImage(canvas, 'JPEG', x, iy, imgW, imgH)
+
+          if (fotos[i].descripcion) {
+            doc.setFontSize(7)
+            doc.text(fotos[i].descripcion, x, iy + imgH + 3, { maxWidth: imgW })
+          }
+        } catch {
+          doc.setFontSize(8)
+          doc.text('(Error al cargar imagen)', x, iy + imgH / 2)
+        }
+      }
+    }
 
     doc.save(`orden_trabajo_${orden.id}.pdf`)
   }
