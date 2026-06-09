@@ -6,6 +6,12 @@ async function exec(promise) {
   return camelize(data)
 }
 
+function cleanEmpty(obj) {
+  return Object.fromEntries(
+    Object.entries(obj).map(([k, v]) => [k, v === '' ? null : v])
+  )
+}
+
 export async function fetchPerfil() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('No autenticado')
@@ -50,11 +56,11 @@ export async function fetchOrden(id) {
 
 export async function createOrden(data) {
   const { data: { user } } = await supabase.auth.getUser()
-  return exec(supabase.from('ordenes').insert({ ...snakeize(data), created_by: user.id }).select().single())
+  return exec(supabase.from('ordenes').insert({ ...snakeize(cleanEmpty(data)), created_by: user.id }).select().single())
 }
 
 export async function updateOrden(id, data) {
-  const { error } = await supabase.from('ordenes').update(snakeize(data)).eq('id', id)
+  const { error } = await supabase.from('ordenes').update(snakeize(cleanEmpty(data))).eq('id', id)
   if (error) throw error
   return { id, ...data }
 }
@@ -75,11 +81,11 @@ export async function fetchCompra(id) {
 
 export async function createCompra(data) {
   const { data: { user } } = await supabase.auth.getUser()
-  return exec(supabase.from('compras').insert({ ...snakeize(data), created_by: user.id }).select().single())
+  return exec(supabase.from('compras').insert({ ...snakeize(cleanEmpty(data)), created_by: user.id }).select().single())
 }
 
 export async function updateCompra(id, data) {
-  const { error } = await supabase.from('compras').update(snakeize(data)).eq('id', id)
+  const { error } = await supabase.from('compras').update(snakeize(cleanEmpty(data))).eq('id', id)
   if (error) throw error
   return { id, ...data }
 }
