@@ -1,21 +1,32 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { lazy, Suspense } from 'react'
 import Layout from '../components/layout/Layout'
 import ProtectedRoute from './ProtectedRoute'
 import Login from '../pages/Login'
 import Dashboard from '../pages/Dashboard'
-import WorkOrders from '../pages/WorkOrders'
 import WorkOrderForm from '../pages/WorkOrderForm'
-import WorkOrderDetail from '../pages/WorkOrderDetail'
-import Purchases from '../pages/Purchases'
 import PurchaseForm from '../pages/PurchaseForm'
-import PurchaseDetail from '../pages/PurchaseDetail'
 import EquipmentList from '../pages/EquipmentList'
-import EquipmentDetail from '../pages/EquipmentDetail'
 import Technicians from '../pages/Technicians'
 import Calendar from '../pages/Calendar'
-import Reports from '../pages/Reports'
 import Profile from '../pages/Profile'
 import ResetPassword from '../pages/ResetPassword'
+import NotFound from '../pages/NotFound'
+
+const WorkOrders = lazy(() => import('../pages/WorkOrders'))
+const WorkOrderDetail = lazy(() => import('../pages/WorkOrderDetail'))
+const Purchases = lazy(() => import('../pages/Purchases'))
+const PurchaseDetail = lazy(() => import('../pages/PurchaseDetail'))
+const EquipmentDetail = lazy(() => import('../pages/EquipmentDetail'))
+const Reports = lazy(() => import('../pages/Reports'))
+
+function SuspenseWrapper({ children }) {
+  return (
+    <Suspense fallback={<div className="text-slate-500 p-4">Cargando...</div>}>
+      {children}
+    </Suspense>
+  )
+}
 
 export default function AppRouter() {
   return (
@@ -31,19 +42,20 @@ export default function AppRouter() {
           }
         >
           <Route path="/" element={<Dashboard />} />
-          <Route path="/ordenes" element={<WorkOrders />} />
+          <Route path="/ordenes" element={<SuspenseWrapper><WorkOrders /></SuspenseWrapper>} />
           <Route path="/ordenes/nueva" element={<WorkOrderForm />} />
-          <Route path="/ordenes/:id" element={<WorkOrderDetail />} />
-          <Route path="/compras" element={<Purchases />} />
+          <Route path="/ordenes/:id" element={<SuspenseWrapper><WorkOrderDetail /></SuspenseWrapper>} />
+          <Route path="/compras" element={<SuspenseWrapper><Purchases /></SuspenseWrapper>} />
           <Route path="/compras/nueva" element={<PurchaseForm />} />
-          <Route path="/compras/:id" element={<PurchaseDetail />} />
+          <Route path="/compras/:id" element={<SuspenseWrapper><PurchaseDetail /></SuspenseWrapper>} />
           <Route path="/equipos" element={<EquipmentList />} />
-          <Route path="/equipos/:id" element={<EquipmentDetail />} />
+          <Route path="/equipos/:id" element={<SuspenseWrapper><EquipmentDetail /></SuspenseWrapper>} />
           <Route path="/tecnicos" element={<Technicians />} />
           <Route path="/calendario" element={<Calendar />} />
-          <Route path="/reportes" element={<Reports />} />
+          <Route path="/reportes" element={<SuspenseWrapper><Reports /></SuspenseWrapper>} />
           <Route path="/perfil" element={<Profile />} />
         </Route>
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   )
