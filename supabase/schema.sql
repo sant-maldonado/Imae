@@ -168,7 +168,7 @@ CREATE POLICY ordenes_delete ON public.ordenes FOR DELETE USING (
 -- COMPRAS
 CREATE POLICY compras_select ON public.compras FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY compras_insert ON public.compras FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
+  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor', 'tecnico'))
 );
 CREATE POLICY compras_update ON public.compras FOR UPDATE USING (
   EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
