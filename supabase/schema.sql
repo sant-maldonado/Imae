@@ -62,8 +62,8 @@ CREATE TABLE IF NOT EXISTS public.equipos (
   codigo TEXT NOT NULL UNIQUE,
   ubicacion TEXT,
   estado TEXT DEFAULT 'operativo' CHECK (estado IN ('operativo', 'averiado', 'mantenimiento')),
-  ultimoMantenimiento DATE,
-  proximoMantenimiento DATE,
+  ultimo_mantenimiento DATE,
+  proximo_mantenimiento DATE,
   created_by UUID REFERENCES public.perfiles(id),
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -81,16 +81,16 @@ CREATE TABLE IF NOT EXISTS public.tecnicos (
 
 CREATE TABLE IF NOT EXISTS public.ordenes (
   id SERIAL PRIMARY KEY,
-  equipoId INTEGER REFERENCES public.equipos(id),
-  tecnicoId INTEGER REFERENCES public.tecnicos(id),
+  equipo_id INTEGER REFERENCES public.equipos(id),
+  tecnico_id INTEGER REFERENCES public.tecnicos(id),
   titulo TEXT NOT NULL,
   descripcion TEXT,
   prioridad TEXT DEFAULT 'media' CHECK (prioridad IN ('urgente', 'alta', 'media', 'baja')),
   estado TEXT DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'en_progreso', 'completada')),
-  fechaCreacion DATE DEFAULT CURRENT_DATE,
-  fechaProgramada DATE,
-  fechaCompletada DATE,
-  tipoMantenimiento TEXT DEFAULT 'preventivo' CHECK (tipoMantenimiento IN ('preventivo', 'correctivo', 'predictivo')),
+  fecha_creacion DATE DEFAULT CURRENT_DATE,
+  fecha_programada DATE,
+  fecha_completada DATE,
+  tipo_mantenimiento TEXT DEFAULT 'preventivo' CHECK (tipo_mantenimiento IN ('preventivo', 'correctivo', 'predictivo')),
   created_by UUID REFERENCES public.perfiles(id),
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -101,10 +101,10 @@ CREATE TABLE IF NOT EXISTS public.compras (
   articulo TEXT NOT NULL,
   cantidad INTEGER NOT NULL,
   unidad TEXT DEFAULT 'unidades',
-  fechaSolicitud DATE DEFAULT CURRENT_DATE,
-  fechaEntrega DATE,
+  fecha_solicitud DATE DEFAULT CURRENT_DATE,
+  fecha_entrega DATE,
   estado TEXT DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'en_curso', 'recibido')),
-  ordenId INTEGER REFERENCES public.ordenes(id),
+  orden_id INTEGER REFERENCES public.ordenes(id),
   created_by UUID REFERENCES public.perfiles(id),
   created_at TIMESTAMPTZ DEFAULT now()
 );
@@ -155,7 +155,7 @@ CREATE POLICY tecnicos_delete ON public.tecnicos FOR DELETE USING (
 -- ORDENES
 CREATE POLICY ordenes_select ON public.ordenes FOR SELECT USING (auth.role() = 'authenticated');
 CREATE POLICY ordenes_insert ON public.ordenes FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
+  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor', 'tecnico'))
 );
 CREATE POLICY ordenes_update ON public.ordenes FOR UPDATE USING (
   EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
@@ -179,7 +179,7 @@ CREATE POLICY compras_delete ON public.compras FOR DELETE USING (
 
 -- 5. SEED DATA
 
-INSERT INTO public.equipos (nombre, codigo, ubicacion, estado, ultimoMantenimiento, proximoMantenimiento) VALUES
+INSERT INTO public.equipos (nombre, codigo, ubicacion, estado, ultimo_mantenimiento, proximo_mantenimiento) VALUES
 ('Torno CNC', 'TNC-001', 'Nave A - Sección 1', 'operativo', '2026-04-15', '2026-07-15'),
 ('Fresadora Universal', 'FRU-002', 'Nave A - Sección 2', 'operativo', '2026-05-10', '2026-08-10'),
 ('Prensa Hidráulica', 'PRH-003', 'Nave B', 'averiado', '2026-03-20', '2026-06-20'),
@@ -202,7 +202,7 @@ INSERT INTO public.tecnicos (nombre, especialidad, telefono, email, activo) VALU
 ('Laura Fernández', 'Electrónica', '555-0106', 'laura@fabrica.com', true),
 ('Diego Ramírez', 'Hidráulica', '555-0107', 'diego@fabrica.com', true);
 
-INSERT INTO public.ordenes (equipoId, tecnicoId, titulo, descripcion, prioridad, estado, fechaCreacion, fechaProgramada, tipoMantenimiento) VALUES
+INSERT INTO public.ordenes (equipo_id, tecnico_id, titulo, descripcion, prioridad, estado, fecha_creacion, fecha_programada, tipo_mantenimiento) VALUES
 (1, 1, 'Cambio de aceite hidráulico', 'Realizar cambio de aceite hidráulico del Torno CNC.', 'media', 'pendiente', '2026-05-20', '2026-05-28', 'preventivo'),
 (3, 3, 'Reparación de fuga en prensa', 'Fuga de aceite en el cilindro principal.', 'urgente', 'en_progreso', '2026-05-22', '2026-05-25', 'correctivo'),
 (5, 4, 'Revisión de caldera', 'Inspección anual de la caldera de vapor.', 'alta', 'pendiente', '2026-05-23', '2026-06-01', 'predictivo'),
@@ -219,7 +219,7 @@ INSERT INTO public.ordenes (equipoId, tecnicoId, titulo, descripcion, prioridad,
 (11, 5, 'Cambio de molde', 'Reemplazar molde de la inyectora de plástico.', 'media', 'en_progreso', '2026-05-20', '2026-05-25', 'preventivo'),
 (9, 7, 'Lubricación general', 'Lubricación de ejes y engranajes del taladro radial.', 'baja', 'pendiente', '2026-05-22', '2026-06-01', 'preventivo');
 
-INSERT INTO public.compras (proveedor, articulo, cantidad, unidad, fechaSolicitud, fechaEntrega, estado, ordenId) VALUES
+INSERT INTO public.compras (proveedor, articulo, cantidad, unidad, fecha_solicitud, fecha_entrega, estado, orden_id) VALUES
 ('Repuestos García', 'Sellos hidráulicos kit', 3, 'unidades', '2026-05-22', '2026-05-28', 'en_curso', 2),
 ('Suministros Industriales SA', 'Aceite hidráulico ISO 46', 20, 'litros', '2026-05-20', '2026-05-26', 'recibido', 1),
 ('Herramientas Paz', 'Rodamientos SKF 6205', 6, 'unidades', '2026-05-24', '2026-05-30', 'pendiente', 8),

@@ -35,6 +35,7 @@ vi.mock('../../lib/supabase', () => ({
     from: vi.fn(),
   },
   camelize: deepCamelize,
+  snakeize: (val) => val,
 }))
 
 const api = await import('../api')

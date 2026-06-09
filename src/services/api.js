@@ -1,4 +1,4 @@
-import { supabase, camelize } from '../lib/supabase'
+import { supabase, camelize, snakeize } from '../lib/supabase'
 
 async function exec(promise) {
   const { data, error } = await promise
@@ -50,11 +50,11 @@ export async function fetchOrden(id) {
 
 export async function createOrden(data) {
   const { data: { user } } = await supabase.auth.getUser()
-  return exec(supabase.from('ordenes').insert({ ...data, created_by: user.id }).select().single())
+  return exec(supabase.from('ordenes').insert({ ...snakeize(data), created_by: user.id }).select().single())
 }
 
 export async function updateOrden(id, data) {
-  const { error } = await supabase.from('ordenes').update(data).eq('id', id)
+  const { error } = await supabase.from('ordenes').update(snakeize(data)).eq('id', id)
   if (error) throw error
   return { id, ...data }
 }
@@ -75,11 +75,11 @@ export async function fetchCompra(id) {
 
 export async function createCompra(data) {
   const { data: { user } } = await supabase.auth.getUser()
-  return exec(supabase.from('compras').insert({ ...data, created_by: user.id }).select().single())
+  return exec(supabase.from('compras').insert({ ...snakeize(data), created_by: user.id }).select().single())
 }
 
 export async function updateCompra(id, data) {
-  const { error } = await supabase.from('compras').update(data).eq('id', id)
+  const { error } = await supabase.from('compras').update(snakeize(data)).eq('id', id)
   if (error) throw error
   return { id, ...data }
 }
