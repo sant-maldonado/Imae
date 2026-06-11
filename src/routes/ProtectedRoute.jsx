@@ -1,5 +1,6 @@
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { SkeletonSpinner } from '../components/Skeleton'
 
 export default function ProtectedRoute({ children }) {
   const { user, loading } = useAuth()
@@ -7,7 +8,7 @@ export default function ProtectedRoute({ children }) {
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <p className="text-slate-400">Cargando...</p>
+        <SkeletonSpinner />
       </div>
     )
   }

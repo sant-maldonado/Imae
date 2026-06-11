@@ -39,8 +39,8 @@ describe('WorkOrders page', () => {
   it('shows loading state', () => {
     mockUseOrdenes.mockReturnValue({ data: [], isLoading: true })
     mockUseTecnicos.mockReturnValue({ data: [], isLoading: false })
-    render(<WorkOrders />, { wrapper: TestWrapper })
-    expect(screen.getByText(/cargando/i)).toBeInTheDocument()
+    const { container } = render(<WorkOrders />, { wrapper: TestWrapper })
+    expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
   })
 
   it('has link to create new order', () => {

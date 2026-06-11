@@ -105,6 +105,16 @@ export async function createFoto(data) {
   return exec(supabase.from('fotos_orden').insert({ ...snakeize(cleanEmpty(data)), created_by: user.id }).select().single())
 }
 
+export async function fetchLogs(ordenId) {
+  return exec(supabase.from('logs_orden').select('*').eq('orden_id', ordenId).order('id', { ascending: false }))
+}
+
+export async function createLog(data) {
+  const { data: { user } } = await supabase.auth.getUser()
+  const { data: perfil } = await supabase.from('perfiles').select('nombre').eq('id', user.id).single()
+  return exec(supabase.from('logs_orden').insert({ ...snakeize(cleanEmpty(data)), usuario_nombre: perfil?.nombre || user.email }).select().single())
+}
+
 export async function deleteFoto(id) {
   const { error } = await supabase.from('fotos_orden').delete().eq('id', id)
   if (error) throw error

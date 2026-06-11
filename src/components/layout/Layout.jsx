@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import Header from './Header'
+import { useRealtime } from '../../hooks/useRealtime'
 
 export default function Layout() {
   const location = useLocation()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  useRealtime()
 
   useEffect(() => {
     if (sidebarOpen) {
@@ -17,7 +19,7 @@ export default function Layout() {
   }, [sidebarOpen])
 
   return (
-    <div className="flex h-screen bg-slate-200">
+    <div className="flex h-screen bg-slate-200 dark:bg-slate-900">
       {sidebarOpen && (
         <div className="fixed inset-0 z-30 bg-black/50 md:hidden" onClick={() => setSidebarOpen(false)} />
       )}

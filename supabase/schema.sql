@@ -119,6 +119,17 @@ CREATE TABLE IF NOT EXISTS public.fotos_orden (
   created_at  TIMESTAMPTZ DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS public.logs_orden (
+  id SERIAL PRIMARY KEY,
+  orden_id INTEGER NOT NULL REFERENCES public.ordenes(id) ON DELETE CASCADE,
+  accion TEXT NOT NULL,
+  campo TEXT,
+  valor_anterior TEXT,
+  valor_nuevo TEXT,
+  usuario_nombre TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 -- Bucket para fotos de orden
 INSERT INTO storage.buckets (id, name, public) VALUES ('fotos_orden', 'fotos_orden', true)
 ON CONFLICT (id) DO NOTHING;
@@ -143,6 +154,7 @@ ALTER TABLE public.tecnicos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ordenes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.compras ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.fotos_orden ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.logs_orden ENABLE ROW LEVEL SECURITY;
 
 -- 4. RLS - POLICIES
 
@@ -215,6 +227,9 @@ CREATE POLICY fotos_orden_update ON public.fotos_orden FOR UPDATE USING (
   EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
   OR created_by = auth.uid()
 );
+CREATE POLICY logs_orden_select ON public.logs_orden FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY logs_orden_insert ON public.logs_orden FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
 CREATE POLICY fotos_orden_delete ON public.fotos_orden FOR DELETE USING (
   EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol = 'admin')
   OR created_by = auth.uid()

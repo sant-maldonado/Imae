@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useOrdenes } from '../hooks/useApi'
+import { SkeletonSpinner } from '../components/Skeleton'
 
 const diasSemana = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
 const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -37,9 +38,9 @@ export default function Calendar() {
       c.push(
         <div
           key={dia}
-          className={`min-h-0 overflow-hidden p-1 md:p-1.5 border border-slate-100 rounded-lg ${esHoy ? 'bg-blue-50 ring-2 ring-blue-400' : ''}`}
+          className={`min-h-0 overflow-hidden p-1 md:p-1.5 border border-slate-100 dark:border-slate-700 rounded-lg ${esHoy ? 'bg-blue-50 dark:bg-blue-900/30 ring-2 ring-blue-400' : ''}`}
         >
-          <span className={`text-[11px] md:text-xs font-medium ${esHoy ? 'text-blue-700' : 'text-slate-500'}`}>{dia}</span>
+          <span className={`text-[11px] md:text-xs font-medium ${esHoy ? 'text-blue-700 dark:text-blue-300' : 'text-slate-500 dark:text-slate-400'}`}>{dia}</span>
           <div className="mt-1 space-y-1">
             {ordenesDelDia.slice(0, 3).map((o) => (
               <Link
@@ -55,7 +56,7 @@ export default function Calendar() {
               </Link>
             ))}
             {ordenesDelDia.length > 3 && (
-              <p className="text-[10px] text-slate-400 px-1">+{ordenesDelDia.length - 3} más</p>
+              <p className="text-[10px] text-slate-400 dark:text-slate-500 px-1">+{ordenesDelDia.length - 3} más</p>
             )}
           </div>
         </div>
@@ -67,17 +68,17 @@ export default function Calendar() {
     return c
   }, [primerDia, diasEnMes, year, month, ordenesPorFecha, hoy])
 
-  if (isLoading) return <div className="text-slate-500">Cargando calendario...</div>
+  if (isLoading) return <SkeletonSpinner />
   if (!ordenes) return <div className="text-red-500">Error al cargar calendario</div>
 
   return (
     <div className="h-full flex flex-col">
       <div className="mb-4">
-        <h3 className="text-base md:text-lg font-semibold text-slate-800">{meses[month]} {year}</h3>
+        <h3 className="text-base md:text-lg font-semibold text-slate-800 dark:text-slate-100">{meses[month]} {year}</h3>
       </div>
       <div className="grid grid-cols-7 gap-1 mb-1 shrink-0">
         {diasSemana.map((d) => (
-          <div key={d} className="text-center text-xs font-medium text-slate-500">{d}</div>
+          <div key={d} className="text-center text-xs font-medium text-slate-500 dark:text-slate-400">{d}</div>
         ))}
       </div>
       <div className="flex-1 grid grid-cols-7 grid-rows-6 gap-1 min-h-0">

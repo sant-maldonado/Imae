@@ -40,7 +40,7 @@ export default function Dashboard() {
           ))}
         </div>
 
-        <Link to="/perfil" className="bg-white rounded-xl border border-slate-200 p-6 flex flex-col sm:flex-row items-center gap-5 hover:border-blue-300 transition-colors">
+        <Link to="/perfil" className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex flex-col sm:flex-row items-center gap-5 hover:border-blue-300 dark:hover:border-blue-500 transition-colors">
           {perfil?.avatar_url ? (
             <img src={perfil.avatar_url} alt="" className="w-16 h-16 rounded-full object-cover shrink-0" />
           ) : (
@@ -49,8 +49,8 @@ export default function Dashboard() {
             </div>
           )}
           <div className="text-center sm:text-left">
-            <h2 className="text-lg font-semibold text-slate-800">{nombre}</h2>
-            <p className="text-sm text-slate-500">{email}</p>
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">{nombre}</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">{email}</p>
             <span className="inline-block mt-1 text-xs font-medium bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full">
               {rolLabel[rol] || rol}
             </span>

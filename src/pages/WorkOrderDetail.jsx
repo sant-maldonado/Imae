@@ -1,10 +1,12 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useOrden, useDeleteOrden, useUpdateOrden, useFotos } from '../hooks/useApi'
+import { useOrden, useDeleteOrden, useUpdateOrden, useFotos, useCreateLog } from '../hooks/useApi'
 import { estados, prioridades, tiposMantenimiento, priorityColors, statusColors, formatDate } from '../lib/constants'
+import { SkeletonCard } from '../components/Skeleton'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { useToast } from '../components/Toast'
 import PhotoGallery from '../components/PhotoGallery'
+import LogHistory from '../components/LogHistory'
 
 export default function WorkOrderDetail() {
   const { id } = useParams()
@@ -13,13 +15,14 @@ export default function WorkOrderDetail() {
   const { data: fotos } = useFotos(id)
   const deleteOrden = useDeleteOrden()
   const updateOrden = useUpdateOrden()
+  const createLog = useCreateLog()
   const toast = useToast()
 
-  if (isLoading) return <div className="text-slate-500">Cargando orden...</div>
+  if (isLoading) return <SkeletonCard />
   if (!orden) return <div className="text-slate-500">Orden no encontrada</div>
 
   const handleDelete = async () => {
-    if (confirm('¿Eliminar esta orden de trabajo?')) {
+    if (await toast.confirm('¿Eliminar esta orden de trabajo?')) {
       await deleteOrden.mutateAsync(id)
       toast.success('Orden eliminada')
       navigate('/ordenes')
@@ -131,22 +134,23 @@ export default function WorkOrderDetail() {
       id,
       data: { estado: 'completada', fechaCompletada: new Date().toISOString().split('T')[0] },
     })
+    createLog.mutate({ orden_id: id, accion: 'estado_cambiado', campo: 'estado', valor_anterior: orden.estado, valor_nuevo: 'completada' })
     toast.success('Orden completada')
   }
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <div className="flex items-center gap-2 text-sm text-slate-500">
+      <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
         <Link to="/ordenes" className="hover:text-blue-600">Órdenes</Link>
         <span>/</span>
         <span className="text-slate-800">#{orden.id}</span>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 md:p-6">
         <div className="flex flex-col sm:flex-row items-start gap-3 mb-6">
           <div className="flex-1">
-            <h3 className="text-lg md:text-xl font-semibold text-slate-800">{orden.titulo}</h3>
-            <p className="text-sm text-slate-500 mt-1">Creada el {formatDate(orden.fechaCreacion)}</p>
+            <h3 className="text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-100">{orden.titulo}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Creada el {formatDate(orden.fechaCreacion)}</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             {orden.estado !== 'completada' && (
@@ -174,24 +178,24 @@ export default function WorkOrderDetail() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-slate-500 mb-1">Estado</p>
+            <p className="text-slate-500 dark:text-slate-400 mb-1">Estado</p>
             <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full border ${statusColors[orden.estado]}`}>
               {estados[orden.estado]}
             </span>
           </div>
           <div>
-            <p className="text-slate-500 mb-1">Prioridad</p>
+            <p className="text-slate-500 dark:text-slate-400 mb-1">Prioridad</p>
             <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full border ${priorityColors[orden.prioridad]}`}>
               {prioridades[orden.prioridad]}
             </span>
           </div>
           <div>
             <p className="text-slate-500 mb-1">Equipo</p>
-            <p className="font-medium text-slate-700">{orden.equipoNombre}</p>
+            <p className="font-medium text-slate-700 dark:text-slate-200">{orden.equipoNombre}</p>
           </div>
           <div>
             <p className="text-slate-500 mb-1">Técnico asignado</p>
-            <p className="font-medium text-slate-700">{orden.tecnicoNombre}</p>
+            <p className="font-medium text-slate-700 dark:text-slate-200">{orden.tecnicoNombre}</p>
           </div>
           <div>
             <p className="text-slate-500 mb-1">Tipo de mantenimiento</p>
@@ -209,11 +213,12 @@ export default function WorkOrderDetail() {
           )}
           <div className="col-span-2">
             <p className="text-slate-500 mb-1">Descripción</p>
-            <p className="text-slate-700">{orden.descripcion}</p>
+            <p className="text-slate-700 dark:text-slate-200">{orden.descripcion}</p>
           </div>
         </div>
       </div>
 
+      <LogHistory ordenId={id} />
       <PhotoGallery ordenId={id} />
     </div>
   )

@@ -45,7 +45,7 @@ export default function PhotoGallery({ ordenId }) {
   }, [ordenId, descripcion, queryClient, toast])
 
   const handleDelete = async (foto) => {
-    if (!confirm('¿Eliminar esta foto?')) return
+    if (!await toast.confirm('¿Eliminar esta foto?')) return
     try {
       await deleteFoto.mutateAsync(foto.id)
       toast.success('Foto eliminada')
@@ -57,16 +57,16 @@ export default function PhotoGallery({ ordenId }) {
   if (isLoading) return null
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
+    <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 md:p-6">
       <div className="flex items-center justify-between mb-3">
-        <h4 className="text-sm font-semibold text-slate-700">Fotos de avance</h4>
+        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Fotos de avance</h4>
         <div className="flex items-center gap-2">
           <input
             type="text"
             placeholder="Descripción (opcional)"
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
-            className="text-xs border border-slate-300 rounded-lg px-2 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="text-xs border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
           />
           <input
             ref={fileRef}
@@ -93,19 +93,19 @@ export default function PhotoGallery({ ordenId }) {
       </div>
 
       {(!fotos || fotos.length === 0) ? (
-        <p className="text-xs text-slate-400">No hay fotos todavía</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500">No hay fotos todavía</p>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {fotos.map((foto) => (
-            <div key={foto.id} className="relative group border border-slate-200 rounded-lg overflow-hidden bg-slate-50">
+            <div key={foto.id} className="relative group border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-slate-50 dark:bg-slate-700/50">
               <button onClick={() => setLightbox(foto)} className="w-full">
                 <img src={foto.url} alt={foto.nombre || ''} className="w-full h-28 object-cover" />
               </button>
               <div className="p-2">
                 {foto.descripcion && (
-                  <p className="text-[11px] text-slate-600 truncate">{foto.descripcion}</p>
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">{foto.descripcion}</p>
                 )}
-                <p className="text-[10px] text-slate-400 mt-0.5">{formatDate(foto.createdAt)}</p>
+                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">{formatDate(foto.createdAt)}</p>
               </div>
               {(perfil?.rol === 'admin' || foto.createdBy === perfil?.id) && (
                 <button

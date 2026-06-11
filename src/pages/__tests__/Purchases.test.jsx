@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { TestWrapper } from '../../test/TestWrapper'
 import Purchases from '../Purchases'
+import '../../components/Skeleton'
 
 const mockCompras = [
   { id: 1, articulo: 'Sellos hidráulicos', proveedor: 'Repuestos García', cantidad: 3, unidad: 'unidades', fechaSolicitud: '2026-05-22', fechaEntrega: '2026-05-28', estado: 'en_curso' },
@@ -36,7 +37,7 @@ describe('Purchases page', () => {
 
   it('shows loading state', () => {
     mockLoading = true
-    render(<Purchases />, { wrapper: TestWrapper })
-    expect(screen.getByText('Cargando compras...')).toBeInTheDocument()
+    const { container } = render(<Purchases />, { wrapper: TestWrapper })
+    expect(container.querySelector('.animate-pulse')).toBeInTheDocument()
   })
 })

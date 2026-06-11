@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useCompra, useDeleteCompra, useUpdateCompra } from '../hooks/useApi'
+import { useCompra, useDeleteCompra, useUpdateCompra, useCreateLog } from '../hooks/useApi'
 import { estadosCompra, statusCompraColors, formatDate } from '../lib/constants'
+import { SkeletonCard } from '../components/Skeleton'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { useToast } from '../components/Toast'
@@ -11,13 +12,14 @@ export default function PurchaseDetail() {
   const { data: compra, isLoading } = useCompra(id)
   const deleteCompra = useDeleteCompra()
   const updateCompra = useUpdateCompra()
+  const createLog = useCreateLog()
   const toast = useToast()
 
-  if (isLoading) return <div className="text-slate-500">Cargando compra...</div>
+  if (isLoading) return <SkeletonCard />
   if (!compra) return <div className="text-slate-500">Compra no encontrada</div>
 
   const handleDelete = async () => {
-    if (confirm('¿Eliminar esta orden de compra?')) {
+    if (await toast.confirm('¿Eliminar esta orden de compra?')) {
       await deleteCompra.mutateAsync(id)
       toast.success('Orden de compra eliminada')
       navigate('/compras')
@@ -27,6 +29,7 @@ export default function PurchaseDetail() {
   const handleEstadoChange = async (nuevoEstado) => {
     try {
       await updateCompra.mutateAsync({ id, data: { estado: nuevoEstado } })
+      createLog.mutate({ orden_id: id, accion: 'estado_cambiado', campo: 'estado', valor_anterior: compra.estado, valor_nuevo: nuevoEstado })
       toast.success(`Estado cambiado a ${estadosCompra[nuevoEstado]}`)
     } catch (err) {
       toast.error(err.message)
@@ -73,17 +76,17 @@ export default function PurchaseDetail() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <div className="flex items-center gap-2 text-sm text-slate-500">
+      <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
         <Link to="/compras" className="hover:text-blue-600">Compras</Link>
         <span>/</span>
         <span className="text-slate-800">#{compra.id}</span>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-4 md:p-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 md:p-6">
         <div className="flex flex-col sm:flex-row items-start gap-3 mb-6">
           <div className="flex-1">
-            <h3 className="text-lg md:text-xl font-semibold text-slate-800">{compra.articulo}</h3>
-            <p className="text-sm text-slate-500 mt-1">Solicitada el {formatDate(compra.fechaSolicitud)}</p>
+            <h3 className="text-lg md:text-xl font-semibold text-slate-800 dark:text-slate-100">{compra.articulo}</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Solicitada el {formatDate(compra.fechaSolicitud)}</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
             {compra.estado === 'pendiente' && (
@@ -113,18 +116,18 @@ export default function PurchaseDetail() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
-            <p className="text-slate-500 mb-1">Estado</p>
+            <p className="text-slate-500 dark:text-slate-400 mb-1">Estado</p>
             <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full border ${statusCompraColors[compra.estado]}`}>
               {estadosCompra[compra.estado]}
             </span>
           </div>
           <div>
             <p className="text-slate-500 mb-1">Proveedor</p>
-            <p className="font-medium text-slate-700">{compra.proveedor}</p>
+            <p className="font-medium text-slate-700 dark:text-slate-200">{compra.proveedor}</p>
           </div>
           <div>
             <p className="text-slate-500 mb-1">Cantidad</p>
-            <p className="font-medium text-slate-700">{compra.cantidad} {compra.unidad}</p>
+            <p className="font-medium text-slate-700 dark:text-slate-200">{compra.cantidad} {compra.unidad}</p>
           </div>
           <div>
             <p className="text-slate-500 mb-1">Fecha de entrega</p>

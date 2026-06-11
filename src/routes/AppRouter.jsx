@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import Layout from '../components/layout/Layout'
 import ProtectedRoute from './ProtectedRoute'
+import { SkeletonSpinner } from '../components/Skeleton'
 import Login from '../pages/Login'
 import Dashboard from '../pages/Dashboard'
 import WorkOrderForm from '../pages/WorkOrderForm'
@@ -22,7 +23,7 @@ const Reports = lazy(() => import('../pages/Reports'))
 
 function SuspenseWrapper({ children }) {
   return (
-    <Suspense fallback={<div className="text-slate-500 p-4">Cargando...</div>}>
+    <Suspense fallback={<div className="p-4"><SkeletonSpinner /></div>}>
       {children}
     </Suspense>
   )

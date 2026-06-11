@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useOrdenes, useTecnicos } from '../hooks/useApi'
 import { estados, prioridades, priorityColors, statusColors, formatDate } from '../lib/constants'
+import { SkeletonTable } from '../components/Skeleton'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 
@@ -11,6 +12,7 @@ export default function WorkOrders() {
   const [filtroEstado, setFiltroEstado] = useState('')
   const [filtroPrioridad, setFiltroPrioridad] = useState('')
   const [filtroTecnico, setFiltroTecnico] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const tecnicosMap = useMemo(() => {
     const map = {}
@@ -52,13 +54,14 @@ export default function WorkOrders() {
     doc.save(`ordenes_pendientes_${filtroTecnico}.pdf`)
   }
 
-  if (isLoading) return <div className="text-slate-500">Cargando órdenes...</div>
+  if (isLoading) return <SkeletonTable rows={8} cols={7} />
   if (!ordenes) return <div className="text-red-500">Error al cargar órdenes</div>
 
   const filtradas = ordenes.filter((o) => {
     if (filtroEstado && o.estado !== filtroEstado) return false
     if (filtroPrioridad && o.prioridad !== filtroPrioridad) return false
     if (filtroTecnico && o.tecnicoId !== Number(filtroTecnico)) return false
+    if (searchQuery && !o.titulo.toLowerCase().includes(searchQuery.toLowerCase())) return false
     return true
   })
 
@@ -66,10 +69,17 @@ export default function WorkOrders() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
+          <input
+            type="text"
+            placeholder="Buscar por título..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 w-full sm:w-48"
+          />
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
-            className="text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-700"
+            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
           >
             <option value="">Todos los estados</option>
             {Object.entries(estados).map(([k, v]) => (
@@ -79,7 +89,7 @@ export default function WorkOrders() {
           <select
             value={filtroPrioridad}
             onChange={(e) => setFiltroPrioridad(e.target.value)}
-            className="text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-700"
+            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
           >
             <option value="">Todas las prioridades</option>
             {Object.entries(prioridades).map(([k, v]) => (
@@ -89,7 +99,7 @@ export default function WorkOrders() {
           <select
             value={filtroTecnico}
             onChange={(e) => setFiltroTecnico(e.target.value)}
-            className="text-sm border border-slate-300 rounded-lg px-3 py-2 bg-white text-slate-700"
+            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
           >
             <option value="">Todos los técnicos</option>
             {tecnicos?.filter((t) => t.activo).map((t) => (
@@ -115,36 +125,36 @@ export default function WorkOrders() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
-              <th className="text-left px-4 py-3 font-medium text-slate-600">ID</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Título</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Prioridad</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Técnico</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Estado</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Programada</th>
-              <th className="text-left px-4 py-3 font-medium text-slate-600">Acción</th>
+            <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-700">
+              <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">ID</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Título</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Prioridad</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Técnico</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Estado</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Programada</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Acción</th>
             </tr>
           </thead>
           <tbody>
             {filtradas.map((orden) => (
-              <tr key={orden.id} className="border-b border-slate-100 hover:bg-slate-50">
-                <td className="px-4 py-3 text-slate-500">#{orden.id}</td>
-                <td className="px-4 py-3 font-medium text-slate-800">{orden.titulo}</td>
+              <tr key={orden.id} className="border-b border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                <td className="px-4 py-3 text-slate-500 dark:text-slate-400">#{orden.id}</td>
+                <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{orden.titulo}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full border ${priorityColors[orden.prioridad]}`}>
                     {prioridades[orden.prioridad]}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-600">{orden.tecnicoNombre || '-'}</td>
+                <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{orden.tecnicoNombre || '-'}</td>
                 <td className="px-4 py-3">
                   <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full border ${statusColors[orden.estado]}`}>
                     {estados[orden.estado]}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-slate-500">{formatDate(orden.fechaProgramada)}</td>
+                <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{formatDate(orden.fechaProgramada)}</td>
                 <td className="px-4 py-3">
                   <Link to={`/ordenes/${orden.id}`} className="text-blue-600 hover:text-blue-800 text-xs font-medium">
                     Ver detalle
@@ -155,7 +165,7 @@ export default function WorkOrders() {
           </tbody>
         </table>
         {filtradas.length === 0 && (
-          <p className="text-center text-slate-400 py-8">No se encontraron órdenes</p>
+          <p className="text-center text-slate-400 dark:text-slate-500 py-8">No se encontraron órdenes</p>
         )}
       </div>
     </div>

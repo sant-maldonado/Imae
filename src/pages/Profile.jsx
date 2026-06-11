@@ -80,19 +80,19 @@ export default function Profile() {
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
-      <h1 className="text-xl font-semibold text-slate-800">Mi Perfil</h1>
+      <h1 className="text-xl font-semibold text-slate-800 dark:text-slate-100">Mi Perfil</h1>
 
-      <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-6">
+      <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 space-y-6">
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             {avatarUrl ? (
               <img
                 src={avatarUrl}
                 alt={nombre}
-                className="w-24 h-24 rounded-full object-cover border-4 border-slate-100"
+                className="w-24 h-24 rounded-full object-cover border-4 border-slate-100 dark:border-slate-700"
               />
             ) : (
-              <div className="w-24 h-24 rounded-full bg-blue-600 text-white flex items-center justify-center text-3xl font-bold border-4 border-slate-100">
+              <div className="w-24 h-24 rounded-full bg-blue-600 text-white flex items-center justify-center text-3xl font-bold border-4 border-slate-100 dark:border-slate-700">
                 {inicial}
               </div>
             )}

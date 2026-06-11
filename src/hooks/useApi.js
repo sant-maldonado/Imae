@@ -101,6 +101,14 @@ export function useDeleteFoto() {
   })
 }
 
+export function useLogs(ordenId) {
+  return useQuery({ queryKey: ['logs', ordenId], queryFn: () => api.fetchLogs(ordenId), enabled: !!ordenId })
+}
+
+export function useCreateLog() {
+  return useMutation({ mutationFn: api.createLog })
+}
+
 export function useDashboardStats() {
   return useQuery({ queryKey: ['dashboardStats'], queryFn: api.fetchDashboardStats })
 }
