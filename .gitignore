@@ -29,8 +29,8 @@ test-results/
 playwright-report/
 coverage/
 
-# Archivos internos de desarrollo, fuera del alcance del cliente
-interno/
+# Archivos internos de desarrollo: nunca se versionan
+/interno/
 
 .vercel
 
