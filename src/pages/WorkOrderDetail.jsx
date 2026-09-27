@@ -7,6 +7,7 @@ import autoTable from 'jspdf-autotable'
 import { useToast } from '../components/Toast'
 import PhotoGallery from '../components/PhotoGallery'
 import LogHistory from '../components/LogHistory'
+import { HiOutlineArrowLeft } from 'react-icons/hi2'
 
 export default function WorkOrderDetail() {
   const { id } = useParams()
@@ -142,9 +143,16 @@ export default function WorkOrderDetail() {
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-        <Link to="/ordenes" className="hover:text-blue-600">Órdenes</Link>
-        <span>/</span>
-        <span className="text-slate-800">#{orden.id}</span>
+        <Link
+          to="/ordenes"
+          data-testid="volver-ordenes"
+          className="inline-flex items-center gap-1.5 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+        >
+          <HiOutlineArrowLeft className="w-4 h-4" aria-hidden="true" />
+          Órdenes
+        </Link>
+        <span aria-hidden="true">·</span>
+        <span className="text-slate-800 dark:text-slate-100">#{orden.id}</span>
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4 md:p-6">

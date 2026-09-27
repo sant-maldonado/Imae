@@ -94,4 +94,11 @@ describe('WorkOrderForm page', () => {
     await user.click(screen.getByText('Cancelar'))
     expect(mockNavigate).toHaveBeenCalledWith('/ordenes')
   })
+
+  it('ofrece un enlace visible para volver al listado', () => {
+    render(<WorkOrderForm />, { wrapper: TestWrapper })
+    const volver = screen.getByTestId('volver-ordenes')
+    expect(volver).toHaveAttribute('href', '/ordenes')
+    expect(volver).toHaveTextContent('Órdenes')
+  })
 })

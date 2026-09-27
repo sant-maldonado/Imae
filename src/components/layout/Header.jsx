@@ -33,9 +33,17 @@ export default function Header({ onToggleSidebar }) {
       </div>
       <div className="flex items-center gap-2 md:gap-3 shrink-0">
         <span className="text-xs md:text-sm text-slate-500 dark:text-slate-400 hidden sm:block">{perfil?.nombre || 'Usuario'}</span>
-        <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs md:text-sm font-medium">
-          {perfil?.nombre?.charAt(0).toUpperCase() || 'U'}
-        </div>
+        {perfil?.avatar_url ? (
+          <img
+            src={perfil.avatar_url}
+            alt=""
+            className="w-7 h-7 md:w-8 md:h-8 rounded-full object-cover shrink-0"
+          />
+        ) : (
+          <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs md:text-sm font-medium">
+            {perfil?.nombre?.charAt(0).toUpperCase() || 'U'}
+          </div>
+        )}
       </div>
     </header>
   )

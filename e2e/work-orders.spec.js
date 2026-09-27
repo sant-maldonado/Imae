@@ -104,5 +104,13 @@ test.describe('Work Orders CRUD', () => {
     await detailLink.click()
     await expect(page).toHaveURL(/\/ordenes\/\d+$/)
     await expect(page.locator('text=Órdenes').first()).toBeVisible()
+
+    // la flecha de volver reemplaza al breadcrumb, pero conserva el id de la orden
+    const volver = page.getByTestId('volver-ordenes')
+    await expect(volver).toBeVisible()
+    await expect(volver).toHaveAttribute('href', '/ordenes')
+    await expect(page.locator('[data-testid="volver-ordenes"] ~ span').last()).toHaveText(/^#\d+$/)
+    await volver.click()
+    await expect(page).toHaveURL('/ordenes')
   })
 })

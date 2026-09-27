@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { useCreateOrden, useEquipos, useTecnicos } from '../hooks/useApi'
 import { supabase } from '../lib/supabase'
 import { uploadToCloudinary } from '../lib/cloudinary'
 import { useToast } from '../components/Toast'
 import PhotoUploader from '../components/PhotoUploader'
+import { HiOutlineArrowLeft } from 'react-icons/hi2'
 
 export default function WorkOrderForm() {
   const navigate = useNavigate()
@@ -55,6 +56,14 @@ export default function WorkOrderForm() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+        <Link
+          to="/ordenes"
+          data-testid="volver-ordenes"
+          className="inline-flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 mb-4 transition-colors"
+        >
+          <HiOutlineArrowLeft className="w-4 h-4" aria-hidden="true" />
+          Órdenes
+        </Link>
         <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-6">Nueva Orden de Trabajo</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
