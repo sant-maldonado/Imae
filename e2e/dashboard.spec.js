@@ -6,24 +6,44 @@ test.describe('Dashboard', () => {
     await login(page)
   })
 
-  test('shows 4 quick-access cards', async ({ page }) => {
-    const cards = page.locator('a[href^="/"] span.text-sm')
-    await expect(cards.filter({ hasText: 'Ver Órdenes' })).toBeVisible()
-    await expect(cards.filter({ hasText: 'Calendario' })).toBeVisible()
-    await expect(cards.filter({ hasText: 'Equipos' })).toBeVisible()
-    await expect(cards.filter({ hasText: 'Compras' })).toBeVisible()
+  test('muestra los 4 tiles de resumen con valor', async ({ page }) => {
+    for (const id of ['stat-pendientes', 'stat-en-progreso', 'stat-averiados', 'stat-compras']) {
+      const tile = page.getByTestId(id)
+      await expect(tile).toBeVisible()
+      await expect(tile).toHaveText(/\d/)
+    }
   })
 
-  test('each card navigates to correct section', async ({ page }) => {
-    await page.getByRole('link', { name: 'Ver Órdenes', exact: true }).click()
-    await expect(page).toHaveURL('/ordenes')
-    await page.goBack()
-    await page.getByRole('link', { name: 'Equipos', exact: true }).click()
+  test('cada tile navega a su seccion', async ({ page }) => {
+    await page.getByTestId('stat-averiados').click()
     await expect(page).toHaveURL('/equipos')
+    await page.goBack()
+    await page.getByTestId('stat-compras').click()
+    await expect(page).toHaveURL('/compras')
+  })
+
+  test('el CTA abre el formulario de nueva orden', async ({ page }) => {
+    await page.getByTestId('cta-nueva-orden').click()
+    await expect(page).toHaveURL('/ordenes/nueva')
+  })
+
+  test('lista las ordenes pendientes y enlaza al detalle', async ({ page }) => {
+    // el heading solo aparece cuando useOrdenes dejo de cargar
+    await expect(page.getByRole('heading', { name: 'Órdenes pendientes' })).toBeVisible()
+    const pendientes = page.getByTestId('orden-pendiente')
+    if (await pendientes.count() === 0) {
+      await expect(page.getByText('No hay órdenes pendientes')).toBeVisible()
+      return
+    }
+    const titulo = await pendientes.first().locator('p').first().innerText()
+    await pendientes.first().click()
+    await expect(page).toHaveURL(/\/ordenes\/\d+$/)
+    await expect(page.getByText(titulo).first()).toBeVisible()
   })
 
   test('shows user profile info', async ({ page }) => {
     const { EMAIL } = credenciales()
-    await expect(page.locator(`text=${EMAIL}`)).toBeVisible()
+    await expect(page.getByTestId('tarjeta-perfil')).toBeVisible()
+    await expect(page.getByTestId('tarjeta-perfil')).toContainText(EMAIL)
   })
 })

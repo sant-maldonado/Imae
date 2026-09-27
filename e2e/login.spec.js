@@ -9,7 +9,7 @@ test.describe('Login flow', () => {
     await page.fill('input[type="email"]', EMAIL)
     await page.fill('input[type="password"]', PASSWORD)
     await page.click('button[type="submit"]')
-    await expect(page.getByText('Ver Órdenes')).toBeVisible({ timeout: 30000 })
+    await expect(page.getByTestId('cta-nueva-orden')).toBeVisible({ timeout: 30000 })
     await page.getByText('Cerrar sesión').click()
     await expect(page).toHaveURL('/login', { timeout: 15000 })
   })
