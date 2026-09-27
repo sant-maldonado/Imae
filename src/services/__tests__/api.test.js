@@ -112,14 +112,93 @@ describe('error handling', () => {
   })
 })
 
-describe('fetchPerfil', () => {
-  it('queries perfiles by auth user id', async () => {
-    mockAuthGetUser.mockResolvedValue({ data: { user: { id: 'user-1' } } })
-    const chain = makeChain({ data: { id: 'user-1', nombre: 'Admin' }, error: null })
+describe('logs de compras', () => {
+  it('fetchLogsCompra filtra por compra_id', async () => {
+    const chain = makeChain({ data: [{ id: 1, accion: 'estado_cambiado' }], error: null })
     supabase.from.mockReturnValue(chain)
 
-    const result = await api.fetchPerfil()
-    expect(result.nombre).toBe('Admin')
-    expect(chain.eq).toHaveBeenCalledWith('id', 'user-1')
+    const result = await api.fetchLogsCompra(7)
+    expect(result).toHaveLength(1)
+    expect(supabase.from).toHaveBeenCalledWith('logs_compra')
+    expect(chain.eq).toHaveBeenCalledWith('compra_id', 7)
+  })
+
+  it('createLogCompra escribe en logs_compra con compra_id, no en logs_orden', async () => {
+    mockAuthGetUser.mockResolvedValue({ data: { user: { id: 'uuid-3', email: 'a@a.com' } } })
+    const insertChain = makeChain({ data: { id: 1 }, error: null })
+    supabase.from.mockImplementation((tabla) =>
+      tabla === 'perfiles'
+        ? makeChain({ data: { nombre: 'Admin' }, error: null })
+        : insertChain
+    )
+
+    await api.createLogCompra({ compra_id: 7, accion: 'estado_cambiado', valor_anterior: 'pendiente', valor_nuevo: 'recibido' })
+
+    expect(supabase.from).toHaveBeenCalledWith('logs_compra')
+    expect(supabase.from).not.toHaveBeenCalledWith('logs_orden')
+    expect(insertChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ compra_id: 7, usuario_nombre: 'Admin' })
+    )
+  })
+
+  it('createLog escribe en logs_orden con orden_id', async () => {
+    mockAuthGetUser.mockResolvedValue({ data: { user: { id: 'uuid-4', email: 'a@a.com' } } })
+    const insertChain = makeChain({ data: { id: 1 }, error: null })
+    supabase.from.mockImplementation((tabla) =>
+      tabla === 'perfiles'
+        ? makeChain({ data: { nombre: 'Admin' }, error: null })
+        : insertChain
+    )
+
+    await api.createLog({ orden_id: 3, accion: 'estado_cambiado' })
+
+    expect(supabase.from).toHaveBeenCalledWith('logs_orden')
+    expect(insertChain.insert).toHaveBeenCalledWith(
+      expect.objectContaining({ orden_id: 3 })
+    )
+  })
+})
+
+describe('vinculo compra <-> orden', () => {
+  it('fetchCompras hace join a ordenes y expone ordenTitulo', async () => {
+    const chain = makeChain({
+      data: [
+        { id: 1, proveedor: 'A', orden_id: 3, ordenes: { id: 3, titulo: 'Revisión de caldera' } },
+        { id: 2, proveedor: 'B', orden_id: null, ordenes: null },
+      ],
+      error: null,
+    })
+    supabase.from.mockReturnValue(chain)
+
+    const result = await api.fetchCompras()
+
+    expect(chain.select).toHaveBeenCalledWith('*, ordenes(id, titulo)')
+    expect(result[0].ordenTitulo).toBe('Revisión de caldera')
+    expect(result[1].ordenId).toBeNull()
+    expect(result[1].ordenTitulo).toBeNull()
+  })
+
+  it('fetchCompra resuelve ordenTitulo desde el embed', async () => {
+    const chain = makeChain({
+      data: { id: 1, proveedor: 'A', orden_id: 3, ordenes: { id: 3, titulo: 'Cambio de aceite' } },
+      error: null,
+    })
+    supabase.from.mockReturnValue(chain)
+
+    const result = await api.fetchCompra(1)
+
+    expect(chain.eq).toHaveBeenCalledWith('id', 1)
+    expect(result.ordenId).toBe(3)
+    expect(result.ordenTitulo).toBe('Cambio de aceite')
+  })
+
+  it('fetchCompra no rompe cuando la compra no tiene orden vinculada', async () => {
+    const chain = makeChain({ data: { id: 1, orden_id: null, ordenes: null }, error: null })
+    supabase.from.mockReturnValue(chain)
+
+    const result = await api.fetchCompra(1)
+
+    expect(result.ordenId).toBeNull()
+    expect(result.ordenTitulo).toBeNull()
   })
 })

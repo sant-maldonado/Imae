@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import { HiOutlineTrash, HiOutlinePhotograph } from 'react-icons/hi'
 
-export default function PhotoUploader({ fotos, setFotos }) {
+export default function PhotoUploader({ setFotos }) {
   const fileRef = useRef(null)
   const [previews, setPreviews] = useState([])
 

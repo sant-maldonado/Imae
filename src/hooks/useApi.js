@@ -13,10 +13,6 @@ export function useTecnicos() {
   return useQuery({ queryKey: ['tecnicos'], queryFn: api.fetchTecnicos })
 }
 
-export function useTecnico(id) {
-  return useQuery({ queryKey: ['tecnico', id], queryFn: () => api.fetchTecnico(id), enabled: !!id })
-}
-
 export function useOrdenes() {
   return useQuery({ queryKey: ['ordenes'], queryFn: api.fetchOrdenes })
 }
@@ -85,14 +81,6 @@ export function useFotos(ordenId) {
   return useQuery({ queryKey: ['fotos', ordenId], queryFn: () => api.fetchFotos(ordenId), enabled: !!ordenId })
 }
 
-export function useCreateFoto() {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: api.createFoto,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['fotos'] }),
-  })
-}
-
 export function useDeleteFoto() {
   const queryClient = useQueryClient()
   return useMutation({
@@ -105,10 +93,22 @@ export function useLogs(ordenId) {
   return useQuery({ queryKey: ['logs', ordenId], queryFn: () => api.fetchLogs(ordenId), enabled: !!ordenId })
 }
 
-export function useCreateLog() {
-  return useMutation({ mutationFn: api.createLog })
+export function useCreateLog(ordenId) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: api.createLog,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['logs', ordenId] }),
+  })
 }
 
-export function useDashboardStats() {
-  return useQuery({ queryKey: ['dashboardStats'], queryFn: api.fetchDashboardStats })
+export function useLogsCompra(compraId) {
+  return useQuery({ queryKey: ['logsCompra', compraId], queryFn: () => api.fetchLogsCompra(compraId), enabled: !!compraId })
+}
+
+export function useCreateLogCompra(compraId) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: api.createLogCompra,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['logsCompra', compraId] }),
+  })
 }

@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import { useOrdenes, useEquipos, useTecnicos } from '../hooks/useApi'
+import { tiposMantenimiento } from '../lib/constants'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 
-const COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444']
+const COLORS = ['#f59e0b', '#3b82f6', '#10b981']
 
 export default function Reports() {
   const { data: ordenes } = useOrdenes()
@@ -22,27 +23,22 @@ export default function Reports() {
   }, [ordenes, fechaInicio, fechaFin])
 
   const datosPorEstado = useMemo(() => {
-    if (!ordenesFiltradas) return []
-    const pendientes = ordenesFiltradas.filter((o) => o.estado === 'pendiente').length
-    const progreso = ordenesFiltradas.filter((o) => o.estado === 'en_progreso').length
-    const completadas = ordenesFiltradas.filter((o) => o.estado === 'completada').length
     return [
-      { name: 'Pendientes', value: pendientes },
-      { name: 'En Progreso', value: progreso },
-      { name: 'Completadas', value: completadas },
+      { name: 'Pendientes', value: ordenesFiltradas.filter((o) => o.estado === 'pendiente').length },
+      { name: 'En Progreso', value: ordenesFiltradas.filter((o) => o.estado === 'en_progreso').length },
+      { name: 'Completadas', value: ordenesFiltradas.filter((o) => o.estado === 'completada').length },
     ]
   }, [ordenesFiltradas])
 
   const datosPorTipo = useMemo(() => {
-    if (!ordenesFiltradas) return []
-    const preventivo = ordenesFiltradas.filter((o) => o.tipoMantenimiento === 'preventivo').length
-    const correctivo = ordenesFiltradas.filter((o) => o.tipoMantenimiento === 'correctivo').length
-    const predictivo = ordenesFiltradas.filter((o) => o.tipoMantenimiento === 'predictivo').length
-    return [
-      { name: 'Preventivo', completadas: Math.floor(preventivo * 0.7), pendientes: Math.floor(preventivo * 0.3) },
-      { name: 'Correctivo', completadas: Math.floor(correctivo * 0.5), pendientes: Math.floor(correctivo * 0.5) },
-      { name: 'Predictivo', completadas: Math.floor(predictivo * 0.8), pendientes: Math.floor(predictivo * 0.2) },
-    ]
+    return Object.entries(tiposMantenimiento).map(([tipo, label]) => {
+      const delTipo = ordenesFiltradas.filter((o) => o.tipoMantenimiento === tipo)
+      return {
+        name: label,
+        completadas: delTipo.filter((o) => o.estado === 'completada').length,
+        sinCompletar: delTipo.filter((o) => o.estado !== 'completada').length,
+      }
+    })
   }, [ordenesFiltradas])
 
   const exportarCSV = () => {
@@ -72,8 +68,9 @@ export default function Reports() {
 
       <div className="flex flex-wrap items-center gap-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
         <div>
-          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Desde</label>
+          <label htmlFor="reporte-desde" className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Desde</label>
           <input
+            id="reporte-desde"
             type="date"
             value={fechaInicio}
             onChange={(e) => setFechaInicio(e.target.value)}
@@ -81,8 +78,9 @@ export default function Reports() {
           />
         </div>
         <div>
-          <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Hasta</label>
+          <label htmlFor="reporte-hasta" className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Hasta</label>
           <input
+            id="reporte-hasta"
             type="date"
             value={fechaFin}
             onChange={(e) => setFechaFin(e.target.value)}
@@ -130,7 +128,7 @@ export default function Reports() {
               <Tooltip />
               <Legend />
               <Bar dataKey="completadas" name="Completadas" fill="#10b981" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="pendientes" name="Pendientes" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="sinCompletar" name="Sin completar" fill="#f59e0b" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>

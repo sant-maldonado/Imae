@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useOrden, useDeleteOrden, useUpdateOrden, useFotos, useCreateLog } from '../hooks/useApi'
+import { useOrden, useDeleteOrden, useUpdateOrden, useFotos, useLogs, useCreateLog } from '../hooks/useApi'
 import { estados, prioridades, tiposMantenimiento, priorityColors, statusColors, formatDate } from '../lib/constants'
 import { SkeletonCard } from '../components/Skeleton'
 import { jsPDF } from 'jspdf'
@@ -13,9 +13,10 @@ export default function WorkOrderDetail() {
   const navigate = useNavigate()
   const { data: orden, isLoading } = useOrden(id)
   const { data: fotos } = useFotos(id)
+  const { data: logs } = useLogs(id)
   const deleteOrden = useDeleteOrden()
   const updateOrden = useUpdateOrden()
-  const createLog = useCreateLog()
+  const createLog = useCreateLog(id)
   const toast = useToast()
 
   if (isLoading) return <SkeletonCard />
@@ -218,7 +219,7 @@ export default function WorkOrderDetail() {
         </div>
       </div>
 
-      <LogHistory ordenId={id} />
+      <LogHistory logs={logs} />
       <PhotoGallery ordenId={id} />
     </div>
   )

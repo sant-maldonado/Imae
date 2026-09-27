@@ -37,7 +37,7 @@ describe('ProtectedRoute', () => {
   })
 
   it('redirects to /login when user is not authenticated', () => {
-    const { container } = render(
+    render(
       <ProtectedRoute>
         <div>Protected Content</div>
       </ProtectedRoute>,

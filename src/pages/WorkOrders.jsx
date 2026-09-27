@@ -44,7 +44,7 @@ export default function WorkOrders() {
         o.titulo,
         prioridades[o.prioridad],
         o.fechaProgramada,
-        o.descripcion.length > 60 ? o.descripcion.slice(0, 60) + '...' : o.descripcion,
+        o.descripcion?.length > 60 ? `${o.descripcion.slice(0, 60)}...` : o.descripcion || '',
       ]),
       theme: 'grid',
       headStyles: { fillColor: [37, 99, 235] },

@@ -1,6 +1,6 @@
 import { useParams, Link } from 'react-router-dom'
 import { useEquipo, useOrdenes } from '../hooks/useApi'
-import { estados, prioridades, estadoColors, estadoLabels, statusColors, formatDate } from '../lib/constants'
+import { estados, prioridades, estadoColors, estadoLabels, statusColors, priorityColors, formatDate } from '../lib/constants'
 import { SkeletonCard } from '../components/Skeleton'
 
 export default function EquipmentDetail() {
@@ -62,12 +62,7 @@ export default function EquipmentDetail() {
                   <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${statusColors[orden.estado]}`}>
                     {estados[orden.estado]}
                   </span>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
-                    orden.prioridad === 'urgente' ? 'bg-red-100 text-red-700 border-red-200' :
-                    orden.prioridad === 'alta' ? 'bg-amber-100 text-amber-700 border-amber-200' :
-                    orden.prioridad === 'media' ? 'bg-blue-100 text-blue-700 border-blue-200' :
-                    'bg-slate-100 text-slate-700 border-slate-200'
-                  }`}>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${priorityColors[orden.prioridad]}`}>
                     {prioridades[orden.prioridad]}
                   </span>
                 </div>

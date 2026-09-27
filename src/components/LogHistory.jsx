@@ -1,4 +1,3 @@
-import { useLogs } from '../hooks/useApi'
 import { formatDate } from '../lib/constants'
 
 const accionLabels = {
@@ -13,9 +12,7 @@ const campoLabels = {
   prioridad: 'Prioridad',
 }
 
-export default function LogHistory({ ordenId }) {
-  const { data: logs } = useLogs(ordenId)
-
+export default function LogHistory({ logs }) {
   if (!logs || logs.length === 0) return null
 
   return (

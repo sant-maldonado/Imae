@@ -94,6 +94,7 @@ export default function Purchases() {
               <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Artículo</th>
               <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Proveedor</th>
               <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Cantidad</th>
+              <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Orden</th>
               <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Solicitud</th>
               <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Entrega</th>
               <th className="text-left px-4 py-3 font-medium text-slate-600 dark:text-slate-300">Estado</th>
@@ -107,6 +108,18 @@ export default function Purchases() {
                 <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">{compra.articulo}</td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{compra.proveedor}</td>
                 <td className="px-4 py-3 text-slate-600 dark:text-slate-300">{compra.cantidad} {compra.unidad}</td>
+                <td className="px-4 py-3">
+                  {compra.ordenId ? (
+                    <Link
+                      to={`/ordenes/${compra.ordenId}`}
+                      className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+                    >
+                      #{compra.ordenId}
+                    </Link>
+                  ) : (
+                    <span className="text-slate-300 dark:text-slate-600">-</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{formatDate(compra.fechaSolicitud)}</td>
                 <td className="px-4 py-3 text-slate-500 dark:text-slate-400">{formatDate(compra.fechaEntrega) || '-'}</td>
                 <td className="px-4 py-3">

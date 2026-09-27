@@ -1,18 +1,20 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useCompra, useDeleteCompra, useUpdateCompra, useCreateLog } from '../hooks/useApi'
+import { useCompra, useDeleteCompra, useUpdateCompra, useLogsCompra, useCreateLogCompra } from '../hooks/useApi'
 import { estadosCompra, statusCompraColors, formatDate } from '../lib/constants'
 import { SkeletonCard } from '../components/Skeleton'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { useToast } from '../components/Toast'
+import LogHistory from '../components/LogHistory'
 
 export default function PurchaseDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { data: compra, isLoading } = useCompra(id)
+  const { data: logs } = useLogsCompra(id)
   const deleteCompra = useDeleteCompra()
   const updateCompra = useUpdateCompra()
-  const createLog = useCreateLog()
+  const createLog = useCreateLogCompra(id)
   const toast = useToast()
 
   if (isLoading) return <SkeletonCard />
@@ -29,7 +31,7 @@ export default function PurchaseDetail() {
   const handleEstadoChange = async (nuevoEstado) => {
     try {
       await updateCompra.mutateAsync({ id, data: { estado: nuevoEstado } })
-      createLog.mutate({ orden_id: id, accion: 'estado_cambiado', campo: 'estado', valor_anterior: compra.estado, valor_nuevo: nuevoEstado })
+      createLog.mutate({ compra_id: id, accion: 'estado_cambiado', campo: 'estado', valor_anterior: compra.estado, valor_nuevo: nuevoEstado })
       toast.success(`Estado cambiado a ${estadosCompra[nuevoEstado]}`)
     } catch (err) {
       toast.error(err.message)
@@ -133,8 +135,23 @@ export default function PurchaseDetail() {
             <p className="text-slate-500 mb-1">Fecha de entrega</p>
             <p className="font-medium text-slate-700">{formatDate(compra.fechaEntrega) || 'Pendiente'}</p>
           </div>
+          <div>
+            <p className="text-slate-500 dark:text-slate-400 mb-1">Orden de trabajo</p>
+            {compra.ordenId ? (
+              <Link
+                to={`/ordenes/${compra.ordenId}`}
+                className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+              >
+                #{compra.ordenId} — {compra.ordenTitulo || 'ver orden'}
+              </Link>
+            ) : (
+              <p className="font-medium text-slate-400 dark:text-slate-500">Sin vincular</p>
+            )}
+          </div>
         </div>
       </div>
+
+      <LogHistory logs={logs} />
     </div>
   )
 }

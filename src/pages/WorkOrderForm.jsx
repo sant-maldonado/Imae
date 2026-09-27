@@ -58,8 +58,9 @@ export default function WorkOrderForm() {
         <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-6">Nueva Orden de Trabajo</h3>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Título</label>
+            <label htmlFor="orden-titulo" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Título</label>
             <input
+              id="orden-titulo"
               required
               value={form.titulo}
               onChange={(e) => setForm({ ...form, titulo: e.target.value })}
@@ -68,8 +69,9 @@ export default function WorkOrderForm() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
+            <label htmlFor="orden-descripcion" className="block text-sm font-medium text-slate-700 mb-1">Descripción</label>
             <textarea
+              id="orden-descripcion"
               rows={3}
               value={form.descripcion}
               onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
@@ -79,8 +81,9 @@ export default function WorkOrderForm() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Equipo</label>
+              <label htmlFor="orden-equipo" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Equipo</label>
               <select
+                id="orden-equipo"
                 value={form.equipoId}
                 onChange={(e) => setForm({ ...form, equipoId: e.target.value })}
                 className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
@@ -92,8 +95,9 @@ export default function WorkOrderForm() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Técnico</label>
+              <label htmlFor="orden-tecnico" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Técnico</label>
               <select
+                id="orden-tecnico"
                 required
                 value={form.tecnicoId}
                 onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
@@ -109,8 +113,9 @@ export default function WorkOrderForm() {
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Prioridad</label>
+              <label htmlFor="orden-prioridad" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Prioridad</label>
               <select
+                id="orden-prioridad"
                 value={form.prioridad}
                 onChange={(e) => setForm({ ...form, prioridad: e.target.value })}
                 className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
@@ -122,8 +127,9 @@ export default function WorkOrderForm() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Tipo</label>
+              <label htmlFor="orden-tipo" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Tipo</label>
               <select
+                id="orden-tipo"
                 value={form.tipoMantenimiento}
                 onChange={(e) => setForm({ ...form, tipoMantenimiento: e.target.value })}
                 className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
@@ -134,8 +140,9 @@ export default function WorkOrderForm() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Fecha Programada</label>
+              <label htmlFor="orden-fecha" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Fecha Programada</label>
               <input
+                id="orden-fecha"
                 type="date"
                 required
                 value={form.fechaProgramada}

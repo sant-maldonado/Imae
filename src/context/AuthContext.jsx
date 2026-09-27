@@ -1,7 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase, supabaseUrl } from '../lib/supabase'
-
-const STORAGE_KEY = `sb-${supabaseUrl.match(/https:\/\/(.+)\.supabase/)[1]}-auth-token`
+import { supabase } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 

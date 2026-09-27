@@ -12,12 +12,6 @@ function cleanEmpty(obj) {
   )
 }
 
-export async function fetchPerfil() {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('No autenticado')
-  return exec(supabase.from('perfiles').select('*').eq('id', user.id).single())
-}
-
 export async function fetchEquipos() {
   return exec(supabase.from('equipos').select('*').order('id', { ascending: true }))
 }
@@ -34,10 +28,6 @@ export async function fetchTecnicos() {
     ...t,
     avatarUrl: t.perfiles?.avatarUrl || null,
   }))
-}
-
-export async function fetchTecnico(id) {
-  return exec(supabase.from('tecnicos').select('*').eq('id', id).single())
 }
 
 export async function fetchOrdenes() {
@@ -72,11 +62,18 @@ export async function deleteOrden(id) {
 }
 
 export async function fetchCompras() {
-  return exec(supabase.from('compras').select('*').order('id', { ascending: false }))
+  const data = await exec(
+    supabase.from('compras').select('*, ordenes(id, titulo)').order('id', { ascending: false })
+  )
+  return data.map((c) => ({
+    ...c,
+    ordenTitulo: c.ordenes?.titulo || null,
+  }))
 }
 
 export async function fetchCompra(id) {
-  return exec(supabase.from('compras').select('*').eq('id', id).single())
+  const compra = await exec(supabase.from('compras').select('*, ordenes(id, titulo)').eq('id', id).single())
+  return { ...compra, ordenTitulo: compra.ordenes?.titulo || null }
 }
 
 export async function createCompra(data) {
@@ -100,63 +97,30 @@ export async function fetchFotos(ordenId) {
   return exec(supabase.from('fotos_orden').select('*').eq('orden_id', ordenId).order('id', { ascending: true }))
 }
 
-export async function createFoto(data) {
-  const { data: { user } } = await supabase.auth.getUser()
-  return exec(supabase.from('fotos_orden').insert({ ...snakeize(cleanEmpty(data)), created_by: user.id }).select().single())
-}
-
 export async function fetchLogs(ordenId) {
   return exec(supabase.from('logs_orden').select('*').eq('orden_id', ordenId).order('id', { ascending: false }))
 }
 
-export async function createLog(data) {
+export async function fetchLogsCompra(compraId) {
+  return exec(supabase.from('logs_compra').select('*').eq('compra_id', compraId).order('id', { ascending: false }))
+}
+
+async function createLogEn(tabla, data) {
   const { data: { user } } = await supabase.auth.getUser()
   const { data: perfil } = await supabase.from('perfiles').select('nombre').eq('id', user.id).single()
-  return exec(supabase.from('logs_orden').insert({ ...snakeize(cleanEmpty(data)), usuario_nombre: perfil?.nombre || user.email }).select().single())
+  return exec(supabase.from(tabla).insert({ ...snakeize(cleanEmpty(data)), usuario_nombre: perfil?.nombre || user.email }).select().single())
+}
+
+export async function createLog(data) {
+  return createLogEn('logs_orden', data)
+}
+
+export async function createLogCompra(data) {
+  return createLogEn('logs_compra', data)
 }
 
 export async function deleteFoto(id) {
   const { error } = await supabase.from('fotos_orden').delete().eq('id', id)
   if (error) throw error
   return true
-}
-
-export async function fetchDashboardStats() {
-  const [ordenes, equipos, tecnicos] = await Promise.all([
-    exec(supabase.from('ordenes').select('*')),
-    exec(supabase.from('equipos').select('*')),
-    exec(supabase.from('tecnicos').select('*').eq('activo', true)),
-  ])
-
-  const total = ordenes?.length || 0
-  const pendientes = ordenes?.filter((o) => o.estado === 'pendiente').length || 0
-  const enProgreso = ordenes?.filter((o) => o.estado === 'en_progreso').length || 0
-  const completadas = ordenes?.filter((o) => o.estado === 'completada').length || 0
-  const urgentes = ordenes?.filter((o) => o.prioridad === 'urgente' && o.estado !== 'completada').length || 0
-  const equiposOperativos = equipos?.filter((e) => e.estado === 'operativo').length || 0
-  const equiposAveriados = equipos?.filter((e) => e.estado === 'averiado').length || 0
-
-  const ordenesPorMes = Array.from({ length: 6 }, (_, i) => {
-    const mes = new Date()
-    mes.setMonth(mes.getMonth() - (5 - i))
-    const mesStr = mes.toLocaleString('es', { month: 'short' })
-    const count = ordenes?.filter((o) => {
-      const fecha = new Date(o.fechaCreacion)
-      return fecha.getMonth() === mes.getMonth() && fecha.getFullYear() === mes.getFullYear()
-    }).length || 0
-    return { mes: mesStr, completadas: Math.floor(count * 0.6), pendientes: count }
-  })
-
-  return {
-    total,
-    pendientes,
-    enProgreso,
-    completadas,
-    urgentes,
-    equiposOperativos,
-    equiposAveriados,
-    totalEquipos: equipos?.length || 0,
-    totalTecnicos: tecnicos?.length || 0,
-    ordenesPorMes,
-  }
 }
