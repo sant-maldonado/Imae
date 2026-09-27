@@ -39,3 +39,10 @@ body {
     transform: translateY(0);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .animate-slide-up {
+    animation: none;
+  }
+}
