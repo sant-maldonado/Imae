@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test'
+import { login, credenciales } from './helpers'
 
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login')
-    await page.fill('input[type="email"]', 'admin@ejemplo.com')
-    await page.fill('input[type="password"]', 'CHANGE-ME')
-    await page.click('button[type="submit"]')
-    await expect(page).toHaveURL('/')
+    await login(page)
   })
 
   test('shows 4 quick-access cards', async ({ page }) => {
@@ -26,6 +23,7 @@ test.describe('Dashboard', () => {
   })
 
   test('shows user profile info', async ({ page }) => {
-    await expect(page.locator('text=admin@ejemplo.com')).toBeVisible()
+    const { EMAIL } = credenciales()
+    await expect(page.locator(`text=${EMAIL}`)).toBeVisible()
   })
 })

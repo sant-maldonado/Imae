@@ -14,6 +14,10 @@ describe('formatDate', () => {
   it('handles empty string', () => {
     expect(formatDate('')).toBe('')
   })
+
+  it('drops the time from a TIMESTAMPTZ value', () => {
+    expect(formatDate('2026-09-27T19:46:29.524591+00:00')).toBe('27/09/2026')
+  })
 })
 
 describe('estados', () => {

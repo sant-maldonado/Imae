@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test'
+import { login } from './helpers'
 
 test.describe('Equipment', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login')
-    await page.fill('input[type="email"]', 'admin@ejemplo.com')
-    await page.fill('input[type="password"]', 'CHANGE-ME')
-    await page.click('button[type="submit"]')
-    await expect(page).toHaveURL('/')
+    await login(page)
   })
 
   test('shows equipment grid', async ({ page }) => {

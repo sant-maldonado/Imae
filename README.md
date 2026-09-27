@@ -4,12 +4,9 @@ Sistema fullstack para la gestión integral de mantenimiento fabril. Administrac
 
 **Demo en vivo:** [imae-nu.vercel.app](https://imae-nu.vercel.app)
 
-| Rol | Email | Contraseña |
-|-----|-------|------------|
-| Admin | `admin@ejemplo.com` | `CHANGE-ME` |
-| Supervisor | `supervisor@ejemplo.com` | `CHANGE-ME` |
-| Técnico | `tecnico@ejemplo.com` | `CHANGE-ME` |
-| Operador | `operador@ejemplo.com` | `CHANGE-ME` |
+Cuentas de prueba para los cuatro roles (admin, supervisor, técnico y operador):
+se comparten por canales privados, no están publicadas acá. Pedilas si querés
+probar la demo.
 
 ---
 
@@ -73,7 +70,7 @@ Sistema fullstack para la gestión integral de mantenimiento fabril. Administrac
 | Imágenes | Cloudinary (upload unsigned) |
 | Iconos | react-icons (Heroicons) |
 | Tests unitarios | Vitest + Testing Library (120 tests, 23 files) |
-| Tests E2E | Playwright (18 tests, 10 specs) |
+| Tests E2E | Playwright (21 tests, 10 specs) |
 | Lint | ESLint 10 (flat config) |
 | Deploy | Vercel (auto-deploy desde GitHub) |
 
@@ -95,7 +92,7 @@ npm run lint
 npm run test:e2e
 ```
 
-**120 tests unitarios | 18 tests E2E | 100% pasando**
+**121 tests unitarios | 21 tests E2E | 100% pasando**
 
 ---
 
@@ -108,7 +105,9 @@ npm install
 npm run dev
 ```
 
-> La app se conecta a una instancia de Supabase ya configurada. Para usar tu propia instancia, creá un archivo `.env` con `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_CLOUDINARY_CLOUD_NAME` y `VITE_CLOUDINARY_UPLOAD_PRESET`.
+> La app se conecta a una instancia de Supabase ya configurada. Para usar tu propia instancia, copiá `.env.example` a `.env` y completá `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_CLOUDINARY_CLOUD_NAME` y `VITE_CLOUDINARY_UPLOAD_PRESET`.
+>
+> Los tests E2E necesitan además `E2E_EMAIL` y `E2E_PASSWORD` (una cuenta con rol admin). Van sin prefijo `VITE_` a propósito, para que no terminen en el bundle que ve el navegador.
 >
 > **Instancia nueva:** ejecutá `supabase/schema.sql` completo en el SQL Editor. Es idempotente: podés re-ejecutarlo sin duplicar tablas, policies ni seeds.
 >

@@ -16,7 +16,9 @@ export default function PurchaseForm() {
     unidad: 'unidades',
     fechaEntrega: '',
     estado: 'pendiente',
-    ordenId: null,
+    // '' y no null: es el value de la option "Sin vincular". React avisa cuando
+    // un <select> controlado recibe null. El submit lo vuelve a null para la BD.
+    ordenId: '',
   })
   const [error, setError] = useState('')
 

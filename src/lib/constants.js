@@ -57,5 +57,8 @@ export const estadoLabels = {
 export function formatDate(dateStr) {
   if (!dateStr) return ''
   const [y, m, d] = dateStr.split('-')
-  return `${d}/${m}/${y}`
+  // Las columnas created_at son TIMESTAMPTZ, asi que PostgREST devuelve
+  // "2026-09-27T19:46:29.524591+00:00" y al hacer split('-') el dia se
+  // arrastra con la hora. Hay que cortar en la 'T'.
+  return `${d.split('T')[0]}/${m}/${y}`
 }

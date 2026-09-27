@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { login } from './helpers'
 
 // Los tests de creación dejan datos en la BD real. Cada test usa un
 // marcador propio y borra lo que creó al final, para que la suite sea
@@ -27,13 +28,32 @@ async function crearOrden(page, titulo) {
   await expect(page).toHaveURL('/ordenes')
 }
 
+// Red de seguridad: si un assert falla, el delete de abajo nunca corre y la
+// orden queda en la BD real. Este helper no falla si ya no esta.
+async function limpiar(page, titulo) {
+  await page.goto('/ordenes')
+  await page.getByPlaceholder('Buscar por título...').fill(titulo)
+  const fila = page.locator('tbody tr', { hasText: titulo })
+  if ((await fila.count()) === 0) return
+  await eliminarOrden(page, titulo)
+}
+
 test.describe('Work Orders CRUD', () => {
+  // Titulo de la orden que creo el test en curso, para el afterEach.
+  let pendiente = null
+
   test.beforeEach(async ({ page }) => {
-    await page.goto('/login')
-    await page.fill('input[type="email"]', 'admin@ejemplo.com')
-    await page.fill('input[type="password"]', 'CHANGE-ME')
-    await page.click('button[type="submit"]')
-    await expect(page).toHaveURL('/')
+    await login(page)
+  })
+
+  test.afterEach(async ({ page }) => {
+    if (!pendiente) return
+    try {
+      await limpiar(page, pendiente)
+    } catch {
+      // Si ni la limpieza puede, no queremos tapar el fallo original.
+    }
+    pendiente = null
   })
 
   test('list shows orders and can filter', async ({ page }) => {
@@ -45,6 +65,7 @@ test.describe('Work Orders CRUD', () => {
 
   test('create new order and view detail', async ({ page }) => {
     await crearOrden(page, MARCA_CREAR)
+    pendiente = MARCA_CREAR
 
     // Antes el test clickeaba y no COMPROBABA nada, asi que pasaba
     // aunque la orden no se hubiera creado.
@@ -65,8 +86,10 @@ test.describe('Work Orders CRUD', () => {
 
   test('can delete an order', async ({ page }) => {
     await crearOrden(page, MARCA_BORRAR)
+    pendiente = MARCA_BORRAR
     // Ejercita el modal de confirmacion promise-based
     await eliminarOrden(page, MARCA_BORRAR)
+    pendiente = null
 
     await page.getByPlaceholder('Buscar por título...').fill(MARCA_BORRAR)
     await expect(page.locator('tbody tr', { hasText: MARCA_BORRAR })).toHaveCount(0)
