@@ -11,8 +11,20 @@ const mockGetUser = vi.fn()
 vi.mock('../../hooks/useApi', () => ({
   useCreateOrden: () => ({ mutateAsync: mockMutateAsync, isPending: false }),
   useEquipos: () => ({ data: [{ id: 'e1', nombre: 'Torno CNC', codigo: 'TC-001' }], isLoading: false }),
-  useTecnicos: () => ({ data: [{ id: 't1', nombre: 'Carlos', activo: true }, { id: 't2', nombre: 'Ana', activo: false }], isLoading: false }),
+  useTecnicos: () => ({
+    data: [
+      { id: 't1', nombre: 'Carlos', email: 'tec@imaemantenimiento.com', activo: true },
+      { id: 't2', nombre: 'Ana', email: 'ana@imaemantenimiento.com', activo: false },
+      { id: 't3', nombre: 'Beto', email: 'beto@imaemantenimiento.com', activo: true },
+    ],
+    isLoading: false,
+  }),
 }))
+
+// El select de Tecnico se acota cuando el usuario es tecnico, asi que el mock
+// trae el email: es por ahi como se resuelve la ficha propia.
+const mockAuth = vi.hoisted(() => ({ perfil: { nombre: 'Admin', email: 'admin@imaemantenimiento.com', rol: 'admin' } }))
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => mockAuth }))
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom')
@@ -29,6 +41,7 @@ vi.mock('../../lib/cloudinary', () => ({
 
 beforeEach(() => {
   vi.clearAllMocks()
+  mockAuth.perfil = { nombre: 'Admin', email: 'admin@imaemantenimiento.com', rol: 'admin' }
 })
 
 describe('WorkOrderForm page', () => {
@@ -100,5 +113,62 @@ describe('WorkOrderForm page', () => {
     const volver = screen.getByTestId('volver-ordenes')
     expect(volver).toHaveAttribute('href', '/ordenes')
     expect(volver).toHaveTextContent('Órdenes')
+  })
+})
+
+describe('WorkOrderForm como tecnico', () => {
+  const comoTecnico = () => {
+    mockAuth.perfil = { nombre: 'Tec', email: 'tec@imaemantenimiento.com', rol: 'tecnico' }
+  }
+
+  it('el select de tecnico solo ofrece su propio nombre', () => {
+    comoTecnico()
+    render(<WorkOrderForm />, { wrapper: TestWrapper })
+
+    const select = screen.getByLabelText('Técnico (vos)')
+    const nombres = [...select.options].map((o) => o.textContent)
+    expect(nombres).toEqual(expect.arrayContaining(['Carlos', 'Sin asignar']))
+    expect(nombres).not.toContain('Beto')
+  })
+
+  it('se autoselecciona, porque el default es su propia ficha', async () => {
+    comoTecnico()
+    render(<WorkOrderForm />, { wrapper: TestWrapper })
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Técnico (vos)')).toHaveValue('t1')
+    })
+  })
+
+  it('puede dejar la orden sin asignar', async () => {
+    comoTecnico()
+    const user = userEvent.setup()
+    render(<WorkOrderForm />, { wrapper: TestWrapper })
+
+    await waitFor(() => {
+      expect(screen.getByLabelText('Técnico (vos)')).toHaveValue('t1')
+    })
+    await user.selectOptions(screen.getByLabelText('Técnico (vos)'), '')
+
+    // Sin asignar es valido para el tecnico, asi que el campo no lo bloquea
+    expect(screen.getByLabelText('Técnico (vos)')).not.toBeRequired()
+    expect(screen.getByLabelText('Técnico (vos)')).toHaveValue('')
+  })
+
+  it('avisa si la cuenta no tiene ficha en la tabla de tecnicos', () => {
+    mockAuth.perfil = { nombre: 'Huerfano', email: 'nadie@imaemantenimiento.com', rol: 'tecnico' }
+    render(<WorkOrderForm />, { wrapper: TestWrapper })
+
+    expect(screen.getByText(/no tiene ficha en la lista de técnicos/i)).toBeInTheDocument()
+  })
+
+  it('un supervisor si ve todos los tecnicos activos', () => {
+    render(<WorkOrderForm />, { wrapper: TestWrapper })
+
+    const select = screen.getByLabelText('Técnico')
+    const nombres = [...select.options].map((o) => o.textContent)
+    expect(nombres).toContain('Carlos')
+    expect(nombres).toContain('Beto')
+    expect(nombres).not.toContain('Ana')
   })
 })

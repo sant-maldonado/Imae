@@ -4,6 +4,7 @@ import { useOrden, useEditarOrden, useEquipos, useTecnicos } from '../hooks/useA
 import { useToast } from '../components/Toast'
 import { SkeletonCard } from '../components/Skeleton'
 import { HiOutlineArrowLeft } from 'react-icons/hi2'
+import { useAuth } from '../context/AuthContext'
 
 const CAMPO = 'w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'
 const LABEL = 'block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1'
@@ -27,7 +28,14 @@ function FormOrden({ orden }) {
   const toast = useToast()
   const { data: equipos } = useEquipos()
   const { data: tecnicos } = useTecnicos()
+  const { perfil } = useAuth()
   const editarOrden = useEditarOrden()
+
+  const esTecnico = perfil?.rol === 'tecnico'
+  // Una orden completada queda congelada para el tecnico. Supervision la sigue
+  // pudiendo corregir: si algo quedo mal, es un error de carga de datos, no del
+  // tecnico. El boton Editar tampoco se le muestra, asi que llega por URL.
+  const bloqueada = esTecnico && orden.estado === 'completada'
 
   const [form, setForm] = useState({
     titulo: orden.titulo || '',
@@ -43,8 +51,17 @@ function FormOrden({ orden }) {
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+    if (bloqueada) {
+      setError('La orden está completada y ya no se puede editar.')
+      return
+    }
+    // El tecnico no puede reasignar la orden, asi que tecnicoId no viaja en el
+    // payload. El RLS lo rechaza igual: esto es para no mandar algo que va a
+    // fallar.
+    const data = { ...form }
+    if (esTecnico) delete data.tecnicoId
     try {
-      await editarOrden.mutateAsync({ id, data: form })
+      await editarOrden.mutateAsync({ id, data })
       toast.success('Orden actualizada')
       navigate(`/ordenes/${id}`)
     } catch (err) {
@@ -110,17 +127,29 @@ function FormOrden({ orden }) {
             </div>
             <div>
               <label htmlFor="edit-tecnico" className={LABEL}>Técnico</label>
-              <select
-                id="edit-tecnico"
-                value={form.tecnicoId}
-                onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
-                className={CAMPO}
-              >
-                <option value="">Sin asignar</option>
-                {tecnicos?.filter((t) => t.activo).map((t) => (
-                  <option key={t.id} value={t.id}>{t.nombre}</option>
-                ))}
-              </select>
+              {esTecnico ? (
+                <>
+                  {/* Solo lectura: reasignar la orden es decision de supervision */}
+                  <p className={`${CAMPO} bg-slate-100 dark:bg-slate-900 text-slate-500`}>
+                    {orden.tecnicoNombre || 'Sin asignar'}
+                  </p>
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    Si necesitás pasarla a otro técnico, pedile a un supervisor.
+                  </p>
+                </>
+              ) : (
+                <select
+                  id="edit-tecnico"
+                  value={form.tecnicoId}
+                  onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
+                  className={CAMPO}
+                >
+                  <option value="">Sin asignar</option>
+                  {tecnicos?.filter((t) => t.activo).map((t) => (
+                    <option key={t.id} value={t.id}>{t.nombre}</option>
+                  ))}
+                </select>
+              )}
             </div>
             <div>
               <label htmlFor="edit-prioridad" className={LABEL}>Prioridad</label>
@@ -163,12 +192,14 @@ function FormOrden({ orden }) {
           </div>
 
           <div className="flex gap-3 pt-4">
-            {error && (
-              <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-3 py-2 rounded-lg w-full mb-2">{error}</p>
+            {(error || bloqueada) && (
+              <p className="text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 px-3 py-2 rounded-lg w-full mb-2">
+                {error || 'La orden está completada y ya no se puede editar.'}
+              </p>
             )}
             <button
               type="submit"
-              disabled={editarOrden.isPending}
+              disabled={editarOrden.isPending || bloqueada}
               className="bg-blue-600 text-white text-sm font-medium px-6 py-2.5 rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {editarOrden.isPending ? 'Guardando...' : 'Guardar Cambios'}

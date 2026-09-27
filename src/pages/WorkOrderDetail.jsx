@@ -139,6 +139,10 @@ export default function WorkOrderDetail() {
     doc.save(`orden_trabajo_${orden.id}.pdf`)
   }
 
+  // Una orden completada queda congelada para el tecnico; supervision la sigue
+  // pudiendo corregir.
+  const editandoBloqueada = rol === 'tecnico' && orden.estado === 'completada'
+
   const handleCompletar = async () => {
     try {
       await completarOrden.mutateAsync({ id })
@@ -172,7 +176,7 @@ export default function WorkOrderDetail() {
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Creada el {formatDate(orden.fechaCreacion)}</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
-            {puede(rol, 'editarOrden') && (
+            {puede(rol, 'editarOrden') && !editandoBloqueada && (
               <Link
                 to={`/ordenes/${orden.id}/editar`}
                 className="border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1"

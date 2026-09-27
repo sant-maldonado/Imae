@@ -4,6 +4,8 @@ import { TestWrapper } from '../../test/TestWrapper'
 import WorkOrderDetail from '../WorkOrderDetail'
 
 const mockCompletar = vi.fn()
+// Estado de la orden mockeada, para probar que la completada queda congelada.
+const mockOrden = vi.hoisted(() => ({ estado: 'en_progreso' }))
 
 vi.mock('../../hooks/useApi', () => ({
   useOrden: () => ({
@@ -11,7 +13,7 @@ vi.mock('../../hooks/useApi', () => ({
       id: 7,
       titulo: 'Revisar cojinete',
       descripcion: 'Vibracion',
-      estado: 'en_progreso',
+      estado: mockOrden.estado,
       prioridad: 'alta',
       tipoMantenimiento: 'correctivo',
       equipoNombre: 'Torno CNC',
@@ -39,6 +41,7 @@ vi.mock('../../context/AuthContext', () => ({ useAuth: () => mockAuth }))
 
 function renderComo(rol) {
   mockAuth.perfil = { nombre: 'User', rol }
+  mockOrden.estado = 'en_progreso'
   return render(<WorkOrderDetail />, { wrapper: TestWrapper })
 }
 
@@ -50,10 +53,10 @@ describe('WorkOrderDetail permisos por rol', () => {
     expect(screen.getByText('Eliminar')).toBeInTheDocument()
   })
 
-  it('el tecnico completa pero no edita ni elimina', () => {
+  it('el tecnico completa y edita, pero no elimina', () => {
     renderComo('tecnico')
     expect(screen.getByText('Completar')).toBeInTheDocument()
-    expect(screen.queryByText('Editar')).not.toBeInTheDocument()
+    expect(screen.getByText('Editar')).toBeInTheDocument()
     expect(screen.queryByText('Eliminar')).not.toBeInTheDocument()
   })
 
@@ -72,5 +75,25 @@ describe('WorkOrderDetail permisos por rol', () => {
   it('el boton Editar apunta a la ruta de edicion', () => {
     renderComo('admin')
     expect(screen.getByText('Editar').closest('a')).toHaveAttribute('href', '/ordenes/7/editar')
+  })
+
+  it('el tecnico no ve Editar en una orden completada', () => {
+    // Seteamos el mock a mano: renderComo tambien renderiza, y dos renders en
+    // el mismo test dejan dos copias del boton en el documento.
+    mockAuth.perfil = { nombre: 'Tec', rol: 'tecnico' }
+    mockOrden.estado = 'completada'
+    render(<WorkOrderDetail />, { wrapper: TestWrapper })
+
+    expect(screen.queryByText('Editar')).not.toBeInTheDocument()
+    expect(screen.getByText('PDF')).toBeInTheDocument()
+  })
+
+  it('un supervisor si ve Editar en una orden completada', () => {
+    mockAuth.perfil = { nombre: 'Sup', rol: 'supervisor' }
+    mockOrden.estado = 'completada'
+    render(<WorkOrderDetail />, { wrapper: TestWrapper })
+
+    expect(screen.getByText('Editar')).toBeInTheDocument()
+    expect(screen.getByText('Eliminar')).toBeInTheDocument()
   })
 })

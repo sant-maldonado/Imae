@@ -7,8 +7,15 @@ import WorkOrderEdit from '../WorkOrderEdit'
 const mockMutateAsync = vi.fn()
 const mockNavigate = vi.fn()
 
+const mockAuth = vi.hoisted(() => ({ perfil: { nombre: 'Admin', email: 'admin@imaemantenimiento.com', rol: 'admin' } }))
+// Estado de la orden mockeada, para probar el caso de la orden completada.
+const mockOrden = vi.hoisted(() => ({ estado: 'en_progreso' }))
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => mockAuth }))
+
 beforeEach(() => {
   vi.clearAllMocks()
+  mockAuth.perfil = { nombre: 'Admin', email: 'admin@imaemantenimiento.com', rol: 'admin' }
+  mockOrden.estado = 'en_progreso'
 })
 
 vi.mock('../../hooks/useApi', () => ({
@@ -19,15 +26,22 @@ vi.mock('../../hooks/useApi', () => ({
       descripcion: 'Vibracion en el husillo',
       equipoId: 'e1',
       tecnicoId: 't1',
+      tecnicoNombre: 'Carlos',
+      estado: mockOrden.estado,
       prioridad: 'alta',
       tipoMantenimiento: 'correctivo',
       fechaProgramada: '2026-06-15',
     },
     isLoading: false,
   }),
-  useEditarOrden: () => ({ mutateAsync: mockMutateAsync, isPending: false }),
-  useEquipos: () => ({ data: [{ id: 'e1', nombre: 'Torno CNC', codigo: 'TC-001' }] }),
-  useTecnicos: () => ({ data: [{ id: 't1', nombre: 'Carlos', activo: true }] }),
+    useEditarOrden: () => ({ mutateAsync: mockMutateAsync, isPending: false }),
+    useEquipos: () => ({ data: [{ id: 'e1', nombre: 'Torno CNC', codigo: 'TC-001' }] }),
+    useTecnicos: () => ({
+      data: [
+        { id: 't1', nombre: 'Carlos', email: 'tec@imaemantenimiento.com', activo: true },
+        { id: 't3', nombre: 'Beto', email: 'beto@imaemantenimiento.com', activo: true },
+      ],
+    }),
 }))
 
 vi.mock('react-router-dom', async () => {
@@ -95,5 +109,62 @@ describe('WorkOrderEdit page', () => {
     render(<WorkOrderEdit />, { wrapper: TestWrapper })
     const volver = screen.getByTestId('volver-detalle-orden')
     expect(volver).toHaveAttribute('href', '/ordenes/7')
+  })
+})
+
+describe('WorkOrderEdit como tecnico', () => {
+  const comoTecnico = () => {
+    mockAuth.perfil = { nombre: 'Tec', email: 'tec@imaemantenimiento.com', rol: 'tecnico' }
+  }
+
+  it('no puede cambiar el tecnico asignado, lo muestra como texto', () => {
+    comoTecnico()
+    render(<WorkOrderEdit />, { wrapper: TestWrapper })
+
+    expect(screen.queryByLabelText('Técnico')).not.toBeInTheDocument()
+    expect(screen.getByText('Carlos')).toBeInTheDocument()
+    expect(screen.getByText(/pedile a un supervisor/i)).toBeInTheDocument()
+  })
+
+  it('no manda tecnicoId en el payload, porque no puede reasignarse la orden', async () => {
+    comoTecnico()
+    mockMutateAsync.mockResolvedValue({ id: 7 })
+    const user = userEvent.setup()
+    render(<WorkOrderEdit />, { wrapper: TestWrapper })
+
+    await user.click(screen.getByText('Guardar Cambios'))
+    await waitFor(() => expect(mockMutateAsync).toHaveBeenCalled())
+
+    const payload = mockMutateAsync.mock.calls[0][0].data
+    expect(payload).not.toHaveProperty('tecnicoId')
+    expect(payload.titulo).toBe('Revisar cojinete')
+  })
+
+  it('no deja editar una orden completada', () => {
+    comoTecnico()
+    mockOrden.estado = 'completada'
+    render(<WorkOrderEdit />, { wrapper: TestWrapper })
+
+    expect(screen.getByText(/ya no se puede editar/i)).toBeInTheDocument()
+    expect(screen.getByText('Guardar Cambios')).toBeDisabled()
+  })
+
+  it('un supervisor si puede corregir una orden completada', () => {
+    mockOrden.estado = 'completada'
+    render(<WorkOrderEdit />, { wrapper: TestWrapper })
+
+    expect(screen.queryByText(/ya no se puede editar/i)).not.toBeInTheDocument()
+    expect(screen.getByText('Guardar Cambios')).toBeEnabled()
+    expect(screen.getByLabelText('Técnico')).toBeInTheDocument()
+  })
+
+  it('no manda tecnicoId ni en el submit de una completada', async () => {
+    comoTecnico()
+    mockOrden.estado = 'completada'
+    const user = userEvent.setup()
+    render(<WorkOrderEdit />, { wrapper: TestWrapper })
+
+    await user.click(screen.getByText('Guardar Cambios'))
+    expect(mockMutateAsync).not.toHaveBeenCalled()
   })
 })

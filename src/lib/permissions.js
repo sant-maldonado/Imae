@@ -17,6 +17,7 @@ const TODAS = {
   cambiarEstadoCompra: true,
   borrarCompra: true,
   verReportes: true,
+  verTecnicos: true,
 }
 
 const MATRIZ = {
@@ -24,18 +25,21 @@ const MATRIZ = {
   admin: { ...TODAS },
   supervisor: { ...TODAS },
 
-  // tecnico: trabaja ordenes, las suyas. No edita campos ni borra, pero si
-  // genera listas de compra, asi que puede entrar a Compras y crear.
+  // tecnico: trabaja sus ordenes. Las ve y las edita, pero no puede reasignar
+  // el tecnico, mover el estado a mano ni tocar una orden ya completada: eso lo
+  // decide supervision. Genera listas de compra, asi que entra a Compras.
+  // El select de tecnico y el de asignar orden se le acotan a el mismo en la UI.
   tecnico: {
     verTodasLasOrdenes: false,
     crearOrden: true,
-    editarOrden: false,
+    editarOrden: true,
     completarOrden: true,
     borrarOrden: false,
     crearCompra: true,
     cambiarEstadoCompra: false,
     borrarCompra: false,
     verReportes: false,
+    verTecnicos: false,
   },
 
   // operador: solo mira. No escribe nada en ningun lado.
@@ -49,6 +53,7 @@ const MATRIZ = {
     cambiarEstadoCompra: false,
     borrarCompra: false,
     verReportes: false,
+    verTecnicos: true,
   },
 }
 

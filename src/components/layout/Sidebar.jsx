@@ -9,7 +9,7 @@ const links = [
   { to: '/ordenes', label: 'Órdenes', icon: '📋' },
   { to: '/compras', label: 'Compras', icon: '🛒' },
   { to: '/equipos', label: 'Equipos', icon: '⚙️' },
-  { to: '/tecnicos', label: 'Técnicos', icon: '👷' },
+  { to: '/tecnicos', label: 'Técnicos', icon: '👷', requiere: 'verTecnicos' },
   { to: '/calendario', label: 'Calendario', icon: '📅' },
   { to: '/reportes', label: 'Reportes', icon: '📈', requiere: 'verReportes' },
 ]

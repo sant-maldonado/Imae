@@ -125,4 +125,58 @@ test.describe('permisos por rol', () => {
     await expect(page).toHaveURL('/compras/nueva')
     await expect(page.getByRole('heading', { name: 'Nueva Orden de Compra' })).toBeVisible()
   })
+
+  test('el tecnico no ve el item Tecnicos ni entra a la pagina', async ({ page }) => {
+    test.skip(!hayCredencialesDeTecnico(), 'Faltan E2E_TECNICO_* en el .env')
+    await loginComoTecnico(page)
+
+    await expect(page.getByText('Técnicos')).toHaveCount(0)
+    await page.goto('/tecnicos')
+    await expect(page).toHaveURL('/')
+  })
+
+  test('el select de tecnico del alta solo ofrece su propio nombre', async ({ page }) => {
+    test.skip(!hayCredencialesDeTecnico(), 'Faltan E2E_TECNICO_* en el .env')
+    await loginComoTecnico(page)
+
+    await page.goto('/ordenes/nueva')
+    await expect(page.getByLabel('Técnico (vos)')).toBeVisible()
+    // El RLS no le deja asignar a otro, asi que el select no ofrece mas que
+    // su propia ficha. Con otra seria la cuenta ajena expuesta en el propio HTML.
+    const options = await page.getByLabel('Técnico (vos)').locator('option').allTextContents()
+    expect(options.filter((o) => o !== 'Sin asignar')).toHaveLength(1)
+  })
+
+  test('el tecnico edita su propia orden y no puede cambiar el tecnico', async ({ page }) => {
+    // Editar va por la funcion actualizar_orden, que todavia no esta creada.
+    test.skip(
+      !migracionDePermisosAplicada(),
+      'Setear E2E_PERMISOS=1 despues de aplicar interno/aplicar_rls_ordenes.sql'
+    )
+    test.skip(!hayCredencialesDeTecnico(), 'Faltan E2E_TECNICO_* en el .env')
+    await loginComoTecnico(page)
+
+    await page.goto('/ordenes')
+    await page.waitForSelector('tbody tr', { timeout: 20000 })
+    // Solo deberia ver ordenes asignadas a el o creadas por el. Si la primera
+    // fila no es suya, el RLS no esta filtrando.
+    await page.locator('tbody tr a:has-text("Ver detalle")').first().click()
+    await expect(page).toHaveURL(/\/ordenes\/\d+$/)
+
+    await page.click('a:has-text("Editar")')
+    await expect(page).toHaveURL(/\/ordenes\/\d+\/editar$/)
+
+    // El tecnico asignado no es editable: se muestra como texto
+    await expect(page.getByLabel('Técnico')).toHaveCount(0)
+    await expect(page.getByText(/pedile a un supervisor/i)).toBeVisible()
+
+    const descripcion = page.getByLabel('Descripción')
+    await descripcion.fill('Editada por el tecnico en el E2E')
+    await page.getByRole('button', { name: 'Guardar Cambios' }).click()
+
+    await expect(page).toHaveURL(/\/ordenes\/\d+$/)
+    await expect(
+      page.getByText('Editada por el tecnico en el E2E')
+    ).toBeVisible()
+  })
 })

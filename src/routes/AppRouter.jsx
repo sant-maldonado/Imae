@@ -81,7 +81,14 @@ export default function AppRouter() {
           <Route path="/compras/:id" element={<SuspenseWrapper><PurchaseDetail /></SuspenseWrapper>} />
           <Route path="/equipos" element={<EquipmentList />} />
           <Route path="/equipos/:id" element={<SuspenseWrapper><EquipmentDetail /></SuspenseWrapper>} />
-          <Route path="/tecnicos" element={<Technicians />} />
+          <Route
+            path="/tecnicos"
+            element={
+              <RequirePermiso capacidad="verTecnicos">
+                <Technicians />
+              </RequirePermiso>
+            }
+          />
           <Route path="/calendario" element={<Calendar />} />
           <Route
             path="/reportes"

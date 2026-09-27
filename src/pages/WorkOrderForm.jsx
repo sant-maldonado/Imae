@@ -6,13 +6,25 @@ import { uploadToCloudinary } from '../lib/cloudinary'
 import { useToast } from '../components/Toast'
 import PhotoUploader from '../components/PhotoUploader'
 import { HiOutlineArrowLeft } from 'react-icons/hi2'
+import { useAuth } from '../context/AuthContext'
+import { miTecnicoId, tecnicoNoResuelto } from '../lib/identidad'
 
 export default function WorkOrderForm() {
   const navigate = useNavigate()
   const toast = useToast()
   const { data: equipos } = useEquipos()
   const { data: tecnicos } = useTecnicos()
+  const { perfil } = useAuth()
   const createOrden = useCreateOrden()
+
+  const esTecnico = perfil?.rol === 'tecnico'
+  const miId = miTecnicoId(tecnicos, perfil)
+  // El RLS no le deja asignar la orden a otro tecnico, asi que el select
+  // ofrece lo mismo que la base va a aceptar.
+  const opcionesTecnico = esTecnico
+    ? (tecnicos || []).filter((t) => t.id === miId)
+    : (tecnicos || []).filter((t) => t.activo)
+  const sinFicha = tecnicoNoResuelto(tecnicos, perfil)
 
   const [form, setForm] = useState({
     equipoId: '',
@@ -27,11 +39,21 @@ export default function WorkOrderForm() {
   const [fotos, setFotos] = useState([])
   const [error, setError] = useState('')
 
+  // El tecnico se autoselecciona. No va en un useEffect con setForm: tecnicos
+  // todavia no cargo en el primer render, asi que el estado inicial no lo sabe,
+  // y un efecto para eso solo agrega un render de mas. Se deriva en cada
+  // render: para el tecnico el valor efectivo es su propia ficha, salvo que el
+  // elija dejarla sin asignar.
+  const [tecnicoOverride, setTecnicoOverride] = useState(null)
+  const tecnicoId = esTecnico
+    ? (tecnicoOverride !== null ? tecnicoOverride : (miId ?? ''))
+    : form.tecnicoId
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
     try {
-      const orden = await createOrden.mutateAsync(form)
+      const orden = await createOrden.mutateAsync({ ...form, tecnicoId })
       const ordenId = orden.id
 
       if (fotos.length > 0) {
@@ -104,19 +126,40 @@ export default function WorkOrderForm() {
               </select>
             </div>
             <div>
-              <label htmlFor="orden-tecnico" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Técnico</label>
+              <label htmlFor="orden-tecnico" className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Técnico{esTecnico ? ' (vos)' : ''}
+              </label>
               <select
                 id="orden-tecnico"
-                required
-                value={form.tecnicoId}
-                onChange={(e) => setForm({ ...form, tecnicoId: e.target.value })}
+                required={!esTecnico}
+                value={tecnicoId}
+                onChange={(e) =>
+                  esTecnico
+                    ? setTecnicoOverride(e.target.value)
+                    : setForm({ ...form, tecnicoId: e.target.value })
+                }
                 className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
               >
-                <option value="">Seleccionar técnico</option>
-                {tecnicos?.filter((t) => t.activo).map((t) => (
+                <option value="">
+                  {esTecnico ? 'Sin asignar' : 'Seleccionar técnico'}
+                </option>
+                {opcionesTecnico.map((t) => (
                   <option key={t.id} value={t.id}>{t.nombre}</option>
                 ))}
               </select>
+              {esTecnico && !sinFicha && (
+                <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                  Solo podés asignarla a vos. Si la dejás sin asignar te va a
+                  seguir apareciendo en tu lista como creador.
+                </p>
+              )}
+              {sinFicha && (
+                <p className="mt-1.5 text-xs text-amber-600 dark:text-amber-400">
+                  Tu usuario no tiene ficha en la lista de técnicos, así que
+                  vas a poder crear órdenes pero sin asignar a nadie. Es un
+                  dato mal cargado: avisale a un supervisor.
+                </p>
+              )}
             </div>
           </div>
 

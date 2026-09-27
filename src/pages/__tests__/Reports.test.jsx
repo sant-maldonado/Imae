@@ -48,10 +48,13 @@ beforeEach(() => {
 })
 
 describe('Reports page', () => {
-  it('renders heading and summary with real counts', () => {
+  it('renders summary with real counts', () => {
     render(<Reports />, { wrapper: TestWrapper })
 
-    expect(screen.getByRole('heading', { name: 'Reportes' })).toBeInTheDocument()
+    // El titulo "Reportes" lo pone el Header del layout, no la pagina: si la
+    // pagina lo repitiera, getByRole('heading') matchearia los dos.
+    expect(screen.queryByRole('heading', { name: 'Reportes' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Exportar CSV' })).toBeInTheDocument()
     expect(screen.getByText('Total órdenes').nextSibling).toHaveTextContent('3')
     expect(screen.getByText('Equipos registrados').nextSibling).toHaveTextContent('2')
     expect(screen.getByText('Técnicos activos').nextSibling).toHaveTextContent('1')
