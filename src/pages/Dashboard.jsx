@@ -10,6 +10,7 @@ import {
   HiOutlineShoppingBag,
 } from 'react-icons/hi2'
 import { formatDate, priorityColors, prioridades } from '../lib/constants'
+import { puede } from '../lib/permissions'
 import { SkeletonCard } from '../components/Skeleton'
 
 const MAX_PENDIENTES = 4
@@ -116,14 +117,18 @@ export default function Dashboard() {
           <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">{fechaDeHoy()}</p>
           <p className="mt-1 text-xl md:text-2xl font-semibold text-slate-800 dark:text-slate-100">{resumen}</p>
         </div>
-        <Link
-          to="/ordenes/nueva"
-          data-testid="cta-nueva-orden"
-          className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all shrink-0"
-        >
-          <HiOutlinePlus className="w-5 h-5" />
-          Nueva orden
-        </Link>
+        {/* perfil?.rol y no el `rol` de arriba: ese cae a 'tecnico' mientras
+            carga, y para un chequeo de permiso queremos que cierre, no que abra */}
+        {puede(perfil?.rol, 'crearOrden') && (
+          <Link
+            to="/ordenes/nueva"
+            data-testid="cta-nueva-orden"
+            className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-lg shadow-sm hover:shadow-md transition-all shrink-0"
+          >
+            <HiOutlinePlus className="w-5 h-5" />
+            Nueva orden
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

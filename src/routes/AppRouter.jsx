@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { lazy, Suspense } from 'react'
 import Layout from '../components/layout/Layout'
 import ProtectedRoute from './ProtectedRoute'
+import RequirePermiso from './RequirePermiso'
 import { SkeletonSpinner } from '../components/Skeleton'
 import Login from '../pages/Login'
 import Dashboard from '../pages/Dashboard'
@@ -16,6 +17,7 @@ import NotFound from '../pages/NotFound'
 
 const WorkOrders = lazy(() => import('../pages/WorkOrders'))
 const WorkOrderDetail = lazy(() => import('../pages/WorkOrderDetail'))
+const WorkOrderEdit = lazy(() => import('../pages/WorkOrderEdit'))
 const Purchases = lazy(() => import('../pages/Purchases'))
 const PurchaseDetail = lazy(() => import('../pages/PurchaseDetail'))
 const EquipmentDetail = lazy(() => import('../pages/EquipmentDetail'))
@@ -43,17 +45,52 @@ export default function AppRouter() {
           }
         >
           <Route path="/" element={<Dashboard />} />
-          <Route path="/ordenes" element={<SuspenseWrapper><WorkOrders /></SuspenseWrapper>} />
-          <Route path="/ordenes/nueva" element={<WorkOrderForm />} />
-          <Route path="/ordenes/:id" element={<SuspenseWrapper><WorkOrderDetail /></SuspenseWrapper>} />
+          <Route
+            path="/ordenes"
+            element={<SuspenseWrapper><WorkOrders /></SuspenseWrapper>}
+          />
+          <Route
+            path="/ordenes/nueva"
+            element={
+              <RequirePermiso capacidad="crearOrden">
+                <WorkOrderForm />
+              </RequirePermiso>
+            }
+          />
+          <Route
+            path="/ordenes/:id"
+            element={<SuspenseWrapper><WorkOrderDetail /></SuspenseWrapper>}
+          />
+          <Route
+            path="/ordenes/:id/editar"
+            element={
+              <RequirePermiso capacidad="editarOrden">
+                <WorkOrderEdit />
+              </RequirePermiso>
+            }
+          />
           <Route path="/compras" element={<SuspenseWrapper><Purchases /></SuspenseWrapper>} />
-          <Route path="/compras/nueva" element={<PurchaseForm />} />
+          <Route
+            path="/compras/nueva"
+            element={
+              <RequirePermiso capacidad="crearCompra">
+                <PurchaseForm />
+              </RequirePermiso>
+            }
+          />
           <Route path="/compras/:id" element={<SuspenseWrapper><PurchaseDetail /></SuspenseWrapper>} />
           <Route path="/equipos" element={<EquipmentList />} />
           <Route path="/equipos/:id" element={<SuspenseWrapper><EquipmentDetail /></SuspenseWrapper>} />
           <Route path="/tecnicos" element={<Technicians />} />
           <Route path="/calendario" element={<Calendar />} />
-          <Route path="/reportes" element={<SuspenseWrapper><Reports /></SuspenseWrapper>} />
+          <Route
+            path="/reportes"
+            element={
+              <RequirePermiso capacidad="verReportes">
+                <SuspenseWrapper><Reports /></SuspenseWrapper>
+              </RequirePermiso>
+            }
+          />
           <Route path="/perfil" element={<Profile />} />
         </Route>
         <Route path="*" element={<NotFound />} />

@@ -5,10 +5,13 @@ import { estados, prioridades, priorityColors, statusColors, formatDate } from '
 import { SkeletonTable } from '../components/Skeleton'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { useAuth } from '../context/AuthContext'
+import { puede } from '../lib/permissions'
 
 export default function WorkOrders() {
   const { data: ordenes, isLoading } = useOrdenes()
   const { data: tecnicos } = useTecnicos()
+  const rol = useAuth().perfil?.rol
   const [filtroEstado, setFiltroEstado] = useState('')
   const [filtroPrioridad, setFiltroPrioridad] = useState('')
   const [filtroTecnico, setFiltroTecnico] = useState('')
@@ -116,12 +119,14 @@ export default function WorkOrders() {
               PDF - Pendientes
             </button>
           )}
-          <Link
-            to="/ordenes/nueva"
-            className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            + Nueva Orden
-          </Link>
+          {puede(rol, 'crearOrden') && (
+            <Link
+              to="/ordenes/nueva"
+              className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              + Nueva Orden
+            </Link>
+          )}
         </div>
       </div>
 

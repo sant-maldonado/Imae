@@ -1,0 +1,76 @@
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import { TestWrapper } from '../../test/TestWrapper'
+import WorkOrderDetail from '../WorkOrderDetail'
+
+const mockCompletar = vi.fn()
+
+vi.mock('../../hooks/useApi', () => ({
+  useOrden: () => ({
+    data: {
+      id: 7,
+      titulo: 'Revisar cojinete',
+      descripcion: 'Vibracion',
+      estado: 'en_progreso',
+      prioridad: 'alta',
+      tipoMantenimiento: 'correctivo',
+      equipoNombre: 'Torno CNC',
+      tecnicoNombre: 'Carlos',
+      fechaProgramada: '2026-06-15',
+      fechaCreacion: '2026-06-01',
+    },
+    isLoading: false,
+  }),
+  useFotos: () => ({ data: [] }),
+  useDeleteFoto: () => ({ mutate: vi.fn() }),
+  useLogs: () => ({ data: [] }),
+  useCreateLog: () => ({ mutate: vi.fn() }),
+  useCompletarOrden: () => ({ mutateAsync: mockCompletar, isPending: false }),
+  useDeleteOrden: () => ({ mutateAsync: vi.fn() }),
+}))
+
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual('react-router-dom')
+  return { ...actual, useParams: () => ({ id: '7' }) }
+})
+
+const mockAuth = vi.hoisted(() => ({ perfil: { nombre: 'Admin', rol: 'admin' } }))
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => mockAuth }))
+
+function renderComo(rol) {
+  mockAuth.perfil = { nombre: 'User', rol }
+  return render(<WorkOrderDetail />, { wrapper: TestWrapper })
+}
+
+describe('WorkOrderDetail permisos por rol', () => {
+  it('admin ve completar, editar y eliminar', () => {
+    renderComo('admin')
+    expect(screen.getByText('Completar')).toBeInTheDocument()
+    expect(screen.getByText('Editar')).toBeInTheDocument()
+    expect(screen.getByText('Eliminar')).toBeInTheDocument()
+  })
+
+  it('el tecnico completa pero no edita ni elimina', () => {
+    renderComo('tecnico')
+    expect(screen.getByText('Completar')).toBeInTheDocument()
+    expect(screen.queryByText('Editar')).not.toBeInTheDocument()
+    expect(screen.queryByText('Eliminar')).not.toBeInTheDocument()
+  })
+
+  it('el operador no ve ningun boton de escritura', () => {
+    renderComo('operador')
+    expect(screen.queryByText('Completar')).not.toBeInTheDocument()
+    expect(screen.queryByText('Editar')).not.toBeInTheDocument()
+    expect(screen.queryByText('Eliminar')).not.toBeInTheDocument()
+  })
+
+  it('el PDF es para todos', () => {
+    renderComo('operador')
+    expect(screen.getByText('PDF')).toBeInTheDocument()
+  })
+
+  it('el boton Editar apunta a la ruta de edicion', () => {
+    renderComo('admin')
+    expect(screen.getByText('Editar').closest('a')).toHaveAttribute('href', '/ordenes/7/editar')
+  })
+})

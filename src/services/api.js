@@ -1,9 +1,37 @@
 import { supabase, camelize, snakeize } from '../lib/supabase'
 
+// PostgREST devuelve 42501 cuando una politica RLS rechaza la peticion. El
+// mensaje crudo no le dice nada a un tecnico, asi que se traduce y se conserva
+// el codigo original en error.originalMessage para los tests.
+const MENSAJES_PERMISO = {
+  '42501': 'No tenés permiso para hacer esto. Hablá con un supervisor.',
+}
+
+function lanzar(error) {
+  if (!error) return
+  const legible = MENSAJES_PERMISO[error.code]
+  if (!legible) throw error
+  const err = new Error(legible)
+  err.code = error.code
+  err.originalMessage = error.message
+  throw err
+}
+
 async function exec(promise) {
   const { data, error } = await promise
-  if (error) throw error
+  lanzar(error)
   return camelize(data)
+}
+
+// La funcion de SQL todavia no existe mientras el RLS no este aplicado.
+function faltaLaFuncion(error) {
+  // PGRST202 es lo que devuelve PostgREST cuando la funcion no esta creada
+  // todavia. 42883 y el texto en ingles son los que devuelve Postgres.
+  return (
+    error?.code === '42883' ||
+    error?.code === 'PGRST202' ||
+    String(error?.message || '').includes('does not exist')
+  )
 }
 
 function cleanEmpty(obj) {
@@ -49,15 +77,50 @@ export async function createOrden(data) {
   return exec(supabase.from('ordenes').insert({ ...snakeize(cleanEmpty(data)), created_by: user.id }).select().single())
 }
 
-export async function updateOrden(id, data) {
-  const { error } = await supabase.from('ordenes').update(snakeize(cleanEmpty(data))).eq('id', id)
-  if (error) throw error
-  return { id, ...data }
+// Completar pasa por una funcion de SQL porque el RLS no puede restringir
+// columnas: con una politica sola, un tecnico podria cambiarle el id o el
+// created_by a su propia orden. El UPDATE directo esta revocado.
+export async function completarOrden(id) {
+  const { data, error } = await supabase.rpc('completar_orden', { p_id: Number(id) })
+  if (faltaLaFuncion(error)) {
+    // El SQL todavia no esta aplicado. Caemos al UPDATE directo: queda tan
+    // inseguro como antes, pero la app no se rompe en medio de la migracion.
+    // Cuando el RLS este activo este camino va a fallar siempre y se apaga solo.
+    const { error: fallback } = await supabase
+      .from('ordenes')
+      .update({ estado: 'completada', fecha_completada: new Date().toISOString().slice(0, 10) })
+      .eq('id', id)
+    lanzar(fallback)
+    return { id, estado: 'completada' }
+  }
+  lanzar(error)
+  return camelize(data)
+}
+
+// Editar campos: solo administracion, validado del lado de la base.
+export async function editarOrden(id, data) {
+  const { data: orden, error } = await supabase.rpc('actualizar_orden', {
+    p_id: Number(id),
+    p_datos: snakeize(cleanEmpty(data)),
+  })
+  // A diferencia de completar, aca no hay fallback a UPDATE directo: justamente
+  // se esta sacando ese permiso. Si la funcion todavia no existe, es que la
+  // migracion no se aplico, y conviene decirlo en vez de largar un 404 de
+  // PostgREST.
+  if (faltaLaFuncion(error)) {
+    const err = new Error(
+      'La edición de órdenes todavía no está habilitada en esta base. Hay que aplicar la migración de permisos.'
+    )
+    err.code = error.code
+    throw err
+  }
+  lanzar(error)
+  return camelize(orden)
 }
 
 export async function deleteOrden(id) {
   const { error } = await supabase.from('ordenes').delete().eq('id', id)
-  if (error) throw error
+  lanzar(error)
   return true
 }
 
@@ -83,13 +146,13 @@ export async function createCompra(data) {
 
 export async function updateCompra(id, data) {
   const { error } = await supabase.from('compras').update(snakeize(cleanEmpty(data))).eq('id', id)
-  if (error) throw error
+  lanzar(error)
   return { id, ...data }
 }
 
 export async function deleteCompra(id) {
   const { error } = await supabase.from('compras').delete().eq('id', id)
-  if (error) throw error
+  lanzar(error)
   return true
 }
 
@@ -121,6 +184,6 @@ export async function createLogCompra(data) {
 
 export async function deleteFoto(id) {
   const { error } = await supabase.from('fotos_orden').delete().eq('id', id)
-  if (error) throw error
+  lanzar(error)
   return true
 }

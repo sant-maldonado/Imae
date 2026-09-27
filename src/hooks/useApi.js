@@ -29,11 +29,20 @@ export function useCreateOrden() {
   })
 }
 
-export function useUpdateOrden() {
+export function useCompletarOrden() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }) => api.updateOrden(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['ordenes'] }),
+    mutationFn: ({ id }) => api.completarOrden(id),
+    // 'orden' matchea por prefijo, asi que refresca tambien ['ordenes']
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['orden'] }),
+  })
+}
+
+export function useEditarOrden() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }) => api.editarOrden(id, data),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['orden'] }),
   })
 }
 

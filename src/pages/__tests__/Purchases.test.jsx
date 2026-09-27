@@ -15,6 +15,10 @@ vi.mock('../../hooks/useApi', () => ({
   useCompras: () => ({ data: mockCompras, isLoading: mockLoading }),
 }))
 
+// El boton "+ Nueva Compra" solo aparece para roles con crearCompra.
+const mockAuth = vi.hoisted(() => ({ perfil: { nombre: 'Admin', rol: 'admin' } }))
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => mockAuth }))
+
 describe('Purchases page', () => {
   it('renders table with purchases', () => {
     render(<Purchases />, { wrapper: TestWrapper })

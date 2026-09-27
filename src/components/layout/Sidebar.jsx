@@ -2,6 +2,7 @@ import { NavLink, Link } from 'react-router-dom'
 import { FiTool, FiSun, FiMoon } from 'react-icons/fi'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
+import { puede } from '../../lib/permissions'
 
 const links = [
   { to: '/', label: 'Dashboard', icon: '📊' },
@@ -10,12 +11,13 @@ const links = [
   { to: '/equipos', label: 'Equipos', icon: '⚙️' },
   { to: '/tecnicos', label: 'Técnicos', icon: '👷' },
   { to: '/calendario', label: 'Calendario', icon: '📅' },
-  { to: '/reportes', label: 'Reportes', icon: '📈' },
+  { to: '/reportes', label: 'Reportes', icon: '📈', requiere: 'verReportes' },
 ]
 
 export default function Sidebar({ onClose }) {
   const { perfil, logout } = useAuth()
   const { dark, toggle } = useTheme()
+  const visibles = links.filter((l) => !l.requiere || puede(perfil?.rol, l.requiere))
 
   return (
     <aside className="w-64 bg-slate-900 text-white flex flex-col h-full">
@@ -27,7 +29,7 @@ export default function Sidebar({ onClose }) {
         <FiTool className="w-8 h-8 text-blue-400" />
       </Link>
       <nav className="flex-1 p-3 space-y-1">
-        {links.map((link) => (
+        {visibles.map((link) => (
           <NavLink
             key={link.to}
             to={link.to}

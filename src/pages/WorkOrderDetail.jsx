@@ -1,5 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { useOrden, useDeleteOrden, useUpdateOrden, useFotos, useLogs, useCreateLog } from '../hooks/useApi'
+import { useOrden, useDeleteOrden, useCompletarOrden, useFotos, useLogs, useCreateLog } from '../hooks/useApi'
 import { estados, prioridades, tiposMantenimiento, priorityColors, statusColors, formatDate } from '../lib/constants'
 import { SkeletonCard } from '../components/Skeleton'
 import { jsPDF } from 'jspdf'
@@ -7,7 +7,9 @@ import autoTable from 'jspdf-autotable'
 import { useToast } from '../components/Toast'
 import PhotoGallery from '../components/PhotoGallery'
 import LogHistory from '../components/LogHistory'
-import { HiOutlineArrowLeft } from 'react-icons/hi2'
+import { HiOutlineArrowLeft, HiOutlinePencil } from 'react-icons/hi2'
+import { useAuth } from '../context/AuthContext'
+import { puede } from '../lib/permissions'
 
 export default function WorkOrderDetail() {
   const { id } = useParams()
@@ -16,16 +18,22 @@ export default function WorkOrderDetail() {
   const { data: fotos } = useFotos(id)
   const { data: logs } = useLogs(id)
   const deleteOrden = useDeleteOrden()
-  const updateOrden = useUpdateOrden()
+  const completarOrden = useCompletarOrden()
   const createLog = useCreateLog(id)
   const toast = useToast()
+  const rol = useAuth().perfil?.rol
 
   if (isLoading) return <SkeletonCard />
   if (!orden) return <div className="text-slate-500">Orden no encontrada</div>
 
   const handleDelete = async () => {
     if (await toast.confirm('¿Eliminar esta orden de trabajo?')) {
-      await deleteOrden.mutateAsync(id)
+      try {
+        await deleteOrden.mutateAsync(id)
+      } catch (err) {
+        toast.error(err.message)
+        return
+      }
       toast.success('Orden eliminada')
       navigate('/ordenes')
     }
@@ -132,10 +140,12 @@ export default function WorkOrderDetail() {
   }
 
   const handleCompletar = async () => {
-    await updateOrden.mutateAsync({
-      id,
-      data: { estado: 'completada', fechaCompletada: new Date().toISOString().split('T')[0] },
-    })
+    try {
+      await completarOrden.mutateAsync({ id })
+    } catch (err) {
+      toast.error(err.message)
+      return
+    }
     createLog.mutate({ orden_id: id, accion: 'estado_cambiado', campo: 'estado', valor_anterior: orden.estado, valor_nuevo: 'completada' })
     toast.success('Orden completada')
   }
@@ -162,10 +172,20 @@ export default function WorkOrderDetail() {
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Creada el {formatDate(orden.fechaCreacion)}</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
-            {orden.estado !== 'completada' && (
+            {puede(rol, 'editarOrden') && (
+              <Link
+                to={`/ordenes/${orden.id}/editar`}
+                className="border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1"
+              >
+                <HiOutlinePencil className="w-3.5 h-3.5" aria-hidden="true" />
+                Editar
+              </Link>
+            )}
+            {orden.estado !== 'completada' && puede(rol, 'completarOrden') && (
               <button
                 onClick={handleCompletar}
-                className="bg-emerald-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors"
+                disabled={completarOrden.isPending}
+                className="bg-emerald-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-emerald-700 disabled:opacity-50 transition-colors"
               >
                 Completar
               </button>
@@ -176,12 +196,14 @@ export default function WorkOrderDetail() {
             >
               PDF
             </button>
-            <button
-              onClick={handleDelete}
-              className="border border-red-300 text-red-600 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
-            >
-              Eliminar
-            </button>
+            {puede(rol, 'borrarOrden') && (
+              <button
+                onClick={handleDelete}
+                className="border border-red-300 text-red-600 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                Eliminar
+              </button>
+            )}
           </div>
         </div>
 

@@ -33,6 +33,7 @@ vi.mock('../../lib/supabase', () => ({
   supabase: {
     auth: { getUser: mockAuthGetUser },
     from: vi.fn(),
+    rpc: vi.fn(),
   },
   camelize: deepCamelize,
   snakeize: (val) => val,
@@ -200,5 +201,82 @@ describe('vinculo compra <-> orden', () => {
 
     expect(result.ordenId).toBeNull()
     expect(result.ordenTitulo).toBeNull()
+  })
+})
+
+const SIN_PERMISO = 'No tenés permiso para hacer esto. Hablá con un supervisor.'
+
+describe('permisos en la capa de API', () => {
+  it('traduce el 42501 de Postgres a un mensaje legible al completar', async () => {
+    supabase.rpc.mockResolvedValue({ data: null, error: { code: '42501', message: 'new row violates row-level security policy' } })
+
+    await expect(api.completarOrden(7)).rejects.toThrow(SIN_PERMISO)
+  })
+
+  it('traduce el 42501 al eliminar una orden', async () => {
+    supabase.from.mockReturnValue(makeChain({ data: null, error: { code: '42501', message: 'row-level security' } }))
+
+    await expect(api.deleteOrden(7)).rejects.toThrow(SIN_PERMISO)
+  })
+
+  it('traduce el 42501 al cambiar el estado de una compra', async () => {
+    supabase.from.mockReturnValue(makeChain({ data: null, error: { code: '42501', message: 'row-level security' } }))
+
+    await expect(api.updateCompra(1, { estado: 'en_curso' })).rejects.toThrow(SIN_PERMISO)
+  })
+
+  it('deja pasar otros errores sin traducir', async () => {
+    supabase.from.mockReturnValue(makeChain({ data: null, error: { code: '23503', message: 'violates foreign key' } }))
+
+    await expect(api.deleteOrden(7)).rejects.toThrow('violates foreign key')
+  })
+
+  it('completa por la funcion RPC cuando ya existe', async () => {
+    supabase.rpc.mockResolvedValue({ data: { id: 7, estado: 'completada' }, error: null })
+
+    const result = await api.completarOrden(7)
+
+    expect(supabase.rpc).toHaveBeenCalledWith('completar_orden', { p_id: 7 })
+    expect(result.estado).toBe('completada')
+    expect(supabase.from).not.toHaveBeenCalled()
+  })
+
+  it('cae al UPDATE directo si la funcion RPC todavia no esta creada', async () => {
+    supabase.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'function public.completar_orden does not exist' } })
+    const chain = makeChain({ data: null, error: null })
+    supabase.from.mockReturnValue(chain)
+
+    const result = await api.completarOrden(7)
+
+    expect(chain.update).toHaveBeenCalled()
+    expect(result).toEqual({ id: 7, estado: 'completada' })
+  })
+
+  it('no aplica el fallback si el RPC falla por permisos', async () => {
+    supabase.rpc.mockResolvedValue({ data: null, error: { code: '42501', message: 'denied' } })
+    supabase.from.mockReturnValue(makeChain({ data: null, error: null }))
+
+    await expect(api.completarOrden(7)).rejects.toThrow(SIN_PERMISO)
+    expect(supabase.from).not.toHaveBeenCalled()
+  })
+
+  it('edita por la funcion RPC', async () => {
+    supabase.rpc.mockResolvedValue({ data: { id: 7 }, error: null })
+
+    await api.editarOrden(7, { titulo: 'Nuevo titulo' })
+
+    expect(supabase.rpc).toHaveBeenCalledWith('actualizar_orden', {
+      p_id: 7,
+      p_datos: { titulo: 'Nuevo titulo' },
+    })
+  })
+
+  it('editarOrden no tiene fallback: sin la funcion avisa que falta la migracion', async () => {
+    supabase.rpc.mockResolvedValue({ data: null, error: { code: 'PGRST202', message: 'Could not find the function public.actualizar_orden' } })
+
+    await expect(api.editarOrden(7, { titulo: 'X' })).rejects.toThrow(
+      /todav.a no est. habilitada/
+    )
+    expect(supabase.from).not.toHaveBeenCalled()
   })
 })

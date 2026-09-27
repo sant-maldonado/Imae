@@ -19,6 +19,10 @@ vi.mock('react-router-dom', async () => {
   return { ...actual, useNavigate: () => mockNavigate }
 })
 
+// admin ve todos los botones: cambiar estado y eliminar.
+const mockAuth = vi.hoisted(() => ({ perfil: { nombre: 'Admin', rol: 'admin' } }))
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => mockAuth }))
+
 beforeEach(() => {
   vi.clearAllMocks()
 })
@@ -84,5 +88,50 @@ describe('PurchaseDetail vinculo con orden', () => {
     render(<PurchaseDetail />, { wrapper: TestWrapper })
 
     expect(screen.getByRole('link', { name: '#9 — ver orden' })).toHaveAttribute('href', '/ordenes/9')
+  })
+})
+
+describe('PurchaseDetail permisos por rol', () => {
+  const compra = {
+    id: 1,
+    proveedor: 'Ferretería',
+    articulo: 'Filtro de aire',
+    cantidad: 2,
+    unidad: 'unidades',
+    estado: 'pendiente',
+    ordenId: null,
+    ordenTitulo: null,
+  }
+
+  it('el tecnico ve la compra pero no la puede avanzar ni borrar', () => {
+    mockAuth.perfil = { nombre: 'Tec', rol: 'tecnico' }
+    mockUseCompra.mockReturnValue({ isLoading: false, data: compra })
+
+    render(<PurchaseDetail />, { wrapper: TestWrapper })
+
+    expect(screen.getByText('Filtro de aire')).toBeInTheDocument()
+    expect(screen.queryByText('Marcar En Curso')).not.toBeInTheDocument()
+    expect(screen.queryByText('Eliminar')).not.toBeInTheDocument()
+    mockAuth.perfil = { nombre: 'Admin', rol: 'admin' }
+  })
+
+  it('el operador tampoco puede avanzar ni borrar', () => {
+    mockAuth.perfil = { nombre: 'Op', rol: 'operador' }
+    mockUseCompra.mockReturnValue({ isLoading: false, data: compra })
+
+    render(<PurchaseDetail />, { wrapper: TestWrapper })
+
+    expect(screen.queryByText('Marcar En Curso')).not.toBeInTheDocument()
+    expect(screen.queryByText('Eliminar')).not.toBeInTheDocument()
+    mockAuth.perfil = { nombre: 'Admin', rol: 'admin' }
+  })
+
+  it('admin si puede', () => {
+    mockUseCompra.mockReturnValue({ isLoading: false, data: compra })
+
+    render(<PurchaseDetail />, { wrapper: TestWrapper })
+
+    expect(screen.getByText('Marcar En Curso')).toBeInTheDocument()
+    expect(screen.getByText('Eliminar')).toBeInTheDocument()
   })
 })

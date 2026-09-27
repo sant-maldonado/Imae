@@ -5,6 +5,8 @@ import { estadosCompra, statusCompraColors, formatDate } from '../lib/constants'
 import { SkeletonTable } from '../components/Skeleton'
 import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
+import { useAuth } from '../context/AuthContext'
+import { puede } from '../lib/permissions'
 
 const pendientesPDF = (compras) => {
   const doc = new jsPDF()
@@ -36,6 +38,7 @@ const pendientesPDF = (compras) => {
 
 export default function Purchases() {
   const { data: compras, isLoading } = useCompras()
+  const rol = useAuth().perfil?.rol
   const [filtroEstado, setFiltroEstado] = useState('')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -78,12 +81,14 @@ export default function Purchases() {
             </button>
           )}
         </div>
-        <Link
-          to="/compras/nueva"
-          className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          + Nueva Compra
-        </Link>
+          {puede(rol, 'crearCompra') && (
+            <Link
+              to="/compras/nueva"
+              className="bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              + Nueva Compra
+            </Link>
+          )}
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-x-auto">

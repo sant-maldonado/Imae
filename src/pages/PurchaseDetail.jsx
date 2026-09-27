@@ -6,6 +6,8 @@ import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { useToast } from '../components/Toast'
 import LogHistory from '../components/LogHistory'
+import { useAuth } from '../context/AuthContext'
+import { puede } from '../lib/permissions'
 
 export default function PurchaseDetail() {
   const { id } = useParams()
@@ -16,6 +18,7 @@ export default function PurchaseDetail() {
   const updateCompra = useUpdateCompra()
   const createLog = useCreateLogCompra(id)
   const toast = useToast()
+  const rol = useAuth().perfil?.rol
 
   if (isLoading) return <SkeletonCard />
   if (!compra) return <div className="text-slate-500">Compra no encontrada</div>
@@ -91,12 +94,12 @@ export default function PurchaseDetail() {
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Solicitada el {formatDate(compra.fechaSolicitud)}</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
-            {compra.estado === 'pendiente' && (
+            {puede(rol, 'cambiarEstadoCompra') && compra.estado === 'pendiente' && (
               <button onClick={() => handleEstadoChange('en_curso')} className="bg-amber-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-amber-600 transition-colors">
                 Marcar En Curso
               </button>
             )}
-            {compra.estado === 'en_curso' && (
+            {puede(rol, 'cambiarEstadoCompra') && compra.estado === 'en_curso' && (
               <button onClick={() => handleEstadoChange('recibido')} className="bg-emerald-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-emerald-700 transition-colors">
                 Marcar Recibido
               </button>
@@ -107,12 +110,14 @@ export default function PurchaseDetail() {
             >
               PDF
             </button>
-            <button
-              onClick={handleDelete}
-              className="border border-red-300 text-red-600 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
-            >
-              Eliminar
-            </button>
+            {puede(rol, 'borrarCompra') && (
+              <button
+                onClick={handleDelete}
+                className="border border-red-300 text-red-600 text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors"
+              >
+                Eliminar
+              </button>
+            )}
           </div>
         </div>
 

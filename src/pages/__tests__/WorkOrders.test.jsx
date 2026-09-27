@@ -11,6 +11,10 @@ vi.mock('../../hooks/useApi', () => ({
   useTecnicos: (...args) => mockUseTecnicos(...args),
 }))
 
+// El boton "+ Nueva Orden" solo aparece para roles con crearOrden.
+const mockAuth = vi.hoisted(() => ({ perfil: { nombre: 'Admin', rol: 'admin' } }))
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => mockAuth }))
+
 const mockOrdenes = [
   { id: 1, titulo: 'Fix Torno', equipoNombre: 'Torno CNC', tecnicoNombre: 'Carlos', prioridad: 'urgente', estado: 'pendiente', fechaProgramada: '2026-06-01', tipoMantenimiento: 'correctivo' },
   { id: 2, titulo: 'Oil Change', equipoNombre: 'Prensa', tecnicoNombre: 'Ana', prioridad: 'baja', estado: 'completada', fechaProgramada: '2026-05-20', tipoMantenimiento: 'preventivo' },
@@ -48,5 +52,14 @@ describe('WorkOrders page', () => {
     mockUseTecnicos.mockReturnValue({ data: [], isLoading: false })
     render(<WorkOrders />, { wrapper: TestWrapper })
     expect(screen.getByText('+ Nueva Orden').closest('a')).toHaveAttribute('href', '/ordenes/nueva')
+  })
+
+  it('oculta el alta de ordenes al operador, que es solo lectura', () => {
+    mockAuth.perfil = { nombre: 'Op', rol: 'operador' }
+    mockUseOrdenes.mockReturnValue({ data: mockOrdenes, isLoading: false })
+    mockUseTecnicos.mockReturnValue({ data: [], isLoading: false })
+    render(<WorkOrders />, { wrapper: TestWrapper })
+    expect(screen.queryByText('+ Nueva Orden')).not.toBeInTheDocument()
+    mockAuth.perfil = { nombre: 'Admin', rol: 'admin' }
   })
 })
