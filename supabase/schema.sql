@@ -131,6 +131,154 @@ CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- 3b. FUNCIONES DE PERMISOS
+--
+-- Todo lo que el tecnico puede escribir pasa por estas funciones y no por un
+-- UPDATE directo, porque las politicas de RLS filtran por FILA y no por
+-- COLUMNA: con una politica USING (id = auth.uid()) alcanza para que un tecnico
+-- se cambie su propio rol a 'admin'. Para vetar columnas hay que hacerlo en el
+-- codigo, listando campo por campo. Ver seccion 6.
+
+CREATE OR REPLACE FUNCTION public.mi_rol() RETURNS text
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT rol FROM public.perfiles WHERE id = auth.uid();
+$$;
+
+-- Fila del usuario en la tabla tecnicos, o NULL si su cuenta no es un tecnico.
+-- Devolver NULL es lo seguro: el tecnico ve cero ordenes, no todas.
+CREATE OR REPLACE FUNCTION public.mi_tecnico_id() RETURNS int
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT t.id
+  FROM public.tecnicos t
+  JOIN public.perfiles p ON lower(p.email) = lower(t.email)
+  WHERE p.id = auth.uid();
+$$;
+
+-- El usuario actual puede ver esta orden?
+-- OJO con el NULL: comparar con IS NOT DISTINCT FROM daria TRUE cuando las dos
+-- partes son NULL, y eso le abriria al tecnico todas las ordenes sin tecnico
+-- asignado. Por eso el IS NOT NULL explicito.
+CREATE OR REPLACE FUNCTION public.puede_ver_orden(p_orden_id int) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.ordenes o
+    WHERE o.id = p_orden_id
+      AND (
+        public.mi_rol() IN ('admin', 'supervisor', 'operador')
+        OR (public.mi_tecnico_id() IS NOT NULL AND o.tecnico_id = public.mi_tecnico_id())
+        OR o.created_by = auth.uid()
+      )
+  );
+$$;
+
+-- Espejo de puede_ver_orden para compras: la usan las politicas de
+-- logs_compra, que si no dejarian leer el historial de gastos de un companero.
+CREATE OR REPLACE FUNCTION public.puede_ver_compra(p_compra_id int) RETURNS boolean
+LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.compras c
+    WHERE c.id = p_compra_id
+      AND (
+        public.mi_rol() IN ('admin', 'supervisor', 'operador')
+        OR c.created_by = auth.uid()
+      )
+  );
+$$;
+
+-- Completar una orden. Supervision sobre cualquiera, tecnico solo sobre las suyas.
+CREATE OR REPLACE FUNCTION public.completar_orden(p_id int)
+RETURNS public.ordenes
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_orden public.ordenes;
+BEGIN
+  IF public.mi_rol() IN ('admin', 'supervisor') THEN
+    NULL;
+  ELSIF public.mi_rol() = 'tecnico' AND public.puede_ver_orden(p_id) THEN
+    NULL;
+  ELSE
+    RAISE EXCEPTION 'Sin permiso para completar esta orden' USING ERRCODE = '42501';
+  END IF;
+
+  UPDATE public.ordenes o
+  SET estado = 'completada', fecha_completada = CURRENT_DATE
+  WHERE o.id = p_id AND o.estado <> 'completada'
+  RETURNING o.* INTO v_orden;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'La orden % no existe o ya estaba completada', p_id
+      USING ERRCODE = 'P0002';
+  END IF;
+
+  RETURN v_orden;
+END;
+$$;
+
+-- Editar campos de una orden.
+-- Supervision sobre cualquiera. El TECNICO edita las suyas (asignadas o creadas
+-- por el) pero con dos limites: no toca tecnico_id ni estado, y no edita una
+-- orden ya completada.
+-- Los dos campos vetados no son capricho: reasignarse la orden es como se
+-- saca el trabajo de encima, y el estado lo mueve el boton Completar, no un
+-- select. Ignora a proposito cualquier id o created_by que venga en el jsonb: el
+-- payload se lista campo por campo.
+CREATE OR REPLACE FUNCTION public.actualizar_orden(p_id int, p_datos jsonb)
+RETURNS public.ordenes
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+  v_orden public.ordenes;
+  v_actual public.ordenes;
+  v_es_tecnico boolean;
+BEGIN
+  v_es_tecnico := public.mi_rol() = 'tecnico';
+
+  IF public.mi_rol() NOT IN ('admin', 'supervisor', 'tecnico') THEN
+    RAISE EXCEPTION 'Sin permiso para editar ordenes' USING ERRCODE = '42501';
+  END IF;
+
+  SELECT o.* INTO v_actual FROM public.ordenes o WHERE o.id = p_id;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'La orden % no existe', p_id USING ERRCODE = 'P0002';
+  END IF;
+
+  IF v_es_tecnico THEN
+    -- puede_ver_orden ya cubre "asignada o creada por el", asi que no repetimos
+    -- la comparacion con tecnico_id aca.
+    IF NOT public.puede_ver_orden(p_id) THEN
+      RAISE EXCEPTION 'Solo podes editar tus propias ordenes' USING ERRCODE = '42501';
+    END IF;
+    IF v_actual.estado = 'completada' THEN
+      RAISE EXCEPTION 'La orden esta completada y ya no se edita'
+        USING ERRCODE = '42501';
+    END IF;
+    IF p_datos ? 'tecnico_id' OR p_datos ? 'estado' THEN
+      RAISE EXCEPTION 'No podes cambiar el tecnico ni el estado'
+        USING ERRCODE = '42501';
+    END IF;
+  END IF;
+
+  -- El `?` de jsonb es "esta clave viene en el payload". Con COALESCE no se
+  -- podria desasignar un tecnico: un null explicito y un campo ausente dan el
+  -- mismo resultado y los dos caen al valor viejo. Con `?` se distingue.
+  UPDATE public.ordenes o SET
+    titulo             = CASE WHEN p_datos ? 'titulo'             THEN p_datos->>'titulo'             ELSE o.titulo             END,
+    descripcion        = CASE WHEN p_datos ? 'descripcion'        THEN p_datos->>'descripcion'        ELSE o.descripcion        END,
+    equipo_id          = CASE WHEN p_datos ? 'equipo_id'          THEN (p_datos->>'equipo_id')::int    ELSE o.equipo_id          END,
+    tecnico_id         = CASE WHEN p_datos ? 'tecnico_id'         THEN (p_datos->>'tecnico_id')::int   ELSE o.tecnico_id         END,
+    prioridad          = CASE WHEN p_datos ? 'prioridad'          THEN p_datos->>'prioridad'          ELSE o.prioridad          END,
+    tipo_mantenimiento = CASE WHEN p_datos ? 'tipo_mantenimiento' THEN p_datos->>'tipo_mantenimiento' ELSE o.tipo_mantenimiento END,
+    fecha_programada   = CASE WHEN p_datos ? 'fecha_programada'   THEN (p_datos->>'fecha_programada')::date ELSE o.fecha_programada END,
+    estado             = CASE WHEN p_datos ? 'estado'             THEN p_datos->>'estado'             ELSE o.estado             END
+  WHERE o.id = p_id
+  RETURNING o.* INTO v_orden;
+
+  RETURN v_orden;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.completar_orden(int) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.actualizar_orden(int, jsonb) TO authenticated;
+
 -- 4. STORAGE
 
 -- Nota: las imagenes (avatares y fotos) se suben a Cloudinary, no a Supabase
@@ -189,133 +337,199 @@ ALTER TABLE public.logs_compra ENABLE ROW LEVEL SECURITY;
 
 -- PERFILES
 DROP POLICY IF EXISTS perfiles_select ON public.profiles;
-CREATE POLICY perfiles_select ON public.profiles FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY perfiles_select ON public.profiles
+  FOR SELECT TO authenticated
+  USING (id = auth.uid() OR public.mi_rol() IN ('admin', 'supervisor'));
 
+-- INSERT y DELETE no llevan politica: la app no escribe en perfiles, la fila la
+-- crea el trigger de la seccion 3, que corre como postgres e ignora el RLS.
+-- Se dropean igual porque venian del bootstrap original.
 DROP POLICY IF EXISTS perfiles_insert ON public.profiles;
-CREATE POLICY perfiles_insert ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS perfiles_delete ON public.profiles;
+
+-- El UPDATE se revoca entero y se reda solo para avatar_url. Las politicas de
+-- RLS filtran por fila, no por columna: aunque la politica de arriba deje
+-- editar la propia fila, sin este revoke un tecnico se podria poner rol
+-- 'admin' a si mismo. La politica sola no alcanza.
+REVOKE UPDATE, INSERT, DELETE ON public.profiles FROM authenticated;
+GRANT UPDATE (avatar_url) ON public.profiles TO authenticated;
 
 DROP POLICY IF EXISTS perfiles_update ON public.profiles;
-CREATE POLICY perfiles_update ON public.profiles FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
-  OR id = auth.uid()
-);
-
-DROP POLICY IF EXISTS perfiles_delete ON public.profiles;
-CREATE POLICY perfiles_delete ON public.profiles FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol = 'admin')
-);
+CREATE POLICY perfiles_update ON public.profiles
+  FOR UPDATE TO authenticated
+  USING (id = auth.uid())
+  WITH CHECK (id = auth.uid());
 
 -- EQUIPOS
-DROP POLICY IF EXISTS equipos_select ON public.equipos;
-CREATE POLICY equipos_select ON public.equipos FOR SELECT USING (auth.role() = 'authenticated');
-
+-- No hay formulario de alta ni de edicion, asi que solo se leen.
+-- Ojo: esta tabla NO lleva la regla de puede_ver_orden, es un catalogo
+-- compartido. Lo que no se puede es escribirla.
 DROP POLICY IF EXISTS equipos_insert ON public.equipos;
-CREATE POLICY equipos_insert ON public.equipos FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
-);
-
 DROP POLICY IF EXISTS equipos_update ON public.equipos;
-CREATE POLICY equipos_update ON public.equipos FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
-);
-
 DROP POLICY IF EXISTS equipos_delete ON public.equipos;
-CREATE POLICY equipos_delete ON public.equipos FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND rol = 'admin')
-);
+
+DROP POLICY IF EXISTS equipos_select ON public.equipos;
+CREATE POLICY equipos_select ON public.equipos
+  FOR SELECT TO authenticated
+  USING (true);
+
+REVOKE INSERT, UPDATE, DELETE ON public.equipos FROM authenticated;
 
 -- TECNICOS
+-- Catalogo legible por todos (lo necesita el select de "asignar a"), pero solo
+-- se puede dar de alta la propia fila, y solo desde el REGISTRO
+-- (AuthContext.register manda created_by = su propio id).
+-- Editar o borrar un tecnico es solo de administracion, y como no hay pantalla
+-- para eso, la app no lo hace: se revoca entero.
+DROP POLICY IF EXISTS tecnicos_update ON public.tecnicos;
+DROP POLICY IF EXISTS tecnicos_delete ON public.tecnicos;
+
 DROP POLICY IF EXISTS tecnicos_select ON public.tecnicos;
-CREATE POLICY tecnicos_select ON public.tecnicos FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY tecnicos_select ON public.tecnicos
+  FOR SELECT TO authenticated
+  USING (true);
 
 DROP POLICY IF EXISTS tecnicos_insert ON public.tecnicos;
-CREATE POLICY tecnicos_insert ON public.tecnicos FOR INSERT WITH CHECK (
-  auth.role() = 'authenticated' AND created_by = auth.uid()
-);
+CREATE POLICY tecnicos_insert ON public.tecnicos
+  FOR INSERT TO authenticated
+  WITH CHECK (created_by = auth.uid());
 
-DROP POLICY IF EXISTS tecnicos_update ON public.tecnicos;
-CREATE POLICY tecnicos_update ON public.tecnicos FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
-);
-
-DROP POLICY IF EXISTS tecnicos_delete ON public.tecnicos;
-CREATE POLICY tecnicos_delete ON public.tecnicos FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND rol = 'admin')
-);
+REVOKE UPDATE, DELETE ON public.tecnicos FROM authenticated;
 
 -- ORDENES
+-- Lectura: administracion y operador ven todo; el tecnico solo las suyas
+-- (asignadas o creadas por el).
+-- El IS NOT NULL explicito es obligatorio: con IS NOT DISTINCT FROM, un
+-- tecnico sin fila en tecnicos compararia NULL con NULL y veria TODAS las
+-- ordenes sin tecnico asignado.
 DROP POLICY IF EXISTS ordenes_select ON public.ordenes;
-CREATE POLICY ordenes_select ON public.ordenes FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY ordenes_select ON public.ordenes
+  FOR SELECT TO authenticated
+  USING (
+    public.mi_rol() IN ('admin', 'supervisor', 'operador')
+    OR (public.mi_tecnico_id() IS NOT NULL AND tecnico_id = public.mi_tecnico_id())
+    OR created_by = auth.uid()
+  );
 
+-- Alta: el operador no crea nada. El tecnico solo puede dejar la orden sin
+-- asignar o cargarsela a si mismo: si pudiera elegir cualquier tecnico_id
+-- estarias leyendo los nombres de todos y repartiendo trabajo.
 DROP POLICY IF EXISTS ordenes_insert ON public.ordenes;
-CREATE POLICY ordenes_insert ON public.ordenes FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor', 'tecnico'))
-);
+CREATE POLICY ordenes_insert ON public.ordenes
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.mi_rol() IN ('admin', 'supervisor')
+    OR (
+      public.mi_rol() = 'tecnico'
+      AND created_by = auth.uid()
+      AND (tecnico_id IS NULL OR tecnico_id = public.mi_tecnico_id())
+    )
+  );
 
+-- UPDATE no lleva politica a proposito: va por completar_orden y
+-- actualizar_orden (seccion 3b), que pueden restringir COLUMNAS. Con una
+-- politica de RLS sola, un tecnico podria cambiarse el tecnico_id o el estado
+-- de su propia orden. La vieja ordenes_update del bootstrap permitia justamente
+-- eso con created_by = auth.uid(), asi que se dropea.
 DROP POLICY IF EXISTS ordenes_update ON public.ordenes;
-CREATE POLICY ordenes_update ON public.ordenes FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
-  OR created_by = auth.uid()
-);
 
+-- Y el permiso de UPDATE se revoca a nivel de TABLA. Sin esto, la app podria
+-- escribir por la API sin pasar por la funcion y saltarse el veto de columnas.
+REVOKE UPDATE ON public.ordenes FROM authenticated;
+
+-- DELETE en cambio SI va por politica, porque la app borra con un DELETE
+-- directo (api.js, deleteOrden) y no por funcion. El revoke de columna de arriba
+-- es solo para UPDATE; revocar DELETE cortaria el borrado del admin.
 DROP POLICY IF EXISTS ordenes_delete ON public.ordenes;
-CREATE POLICY ordenes_delete ON public.ordenes FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND rol = 'admin')
-);
+CREATE POLICY ordenes_delete ON public.ordenes
+  FOR DELETE TO authenticated
+  USING (public.mi_rol() IN ('admin', 'supervisor'));
 
 -- COMPRAS
+-- El tecnico entra y genera listas de compra, asi que puede leer y dar de alta.
+-- PERO solo ve las que el mismo genero: si lee todas, la pagina le muestra el
+-- gasto de la empresa entera y las listas de sus companeros.
+-- Cambiar estado y borrar, solo administracion.
 DROP POLICY IF EXISTS compras_select ON public.compras;
-CREATE POLICY compras_select ON public.compras FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY compras_select ON public.compras
+  FOR SELECT TO authenticated
+  USING (
+    public.mi_rol() IN ('admin', 'supervisor', 'operador')
+    OR created_by = auth.uid()
+  );
 
 DROP POLICY IF EXISTS compras_insert ON public.compras;
-CREATE POLICY compras_insert ON public.compras FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor', 'tecnico'))
-);
+CREATE POLICY compras_insert ON public.compras
+  FOR INSERT TO authenticated
+  WITH CHECK (
+    public.mi_rol() IN ('admin', 'supervisor')
+    OR (public.mi_rol() = 'tecnico' AND created_by = auth.uid())
+  );
 
 DROP POLICY IF EXISTS compras_update ON public.compras;
-CREATE POLICY compras_update ON public.compras FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
-);
+CREATE POLICY compras_update ON public.compras
+  FOR UPDATE TO authenticated
+  USING (public.mi_rol() IN ('admin', 'supervisor'))
+  WITH CHECK (public.mi_rol() IN ('admin', 'supervisor'));
 
 DROP POLICY IF EXISTS compras_delete ON public.compras;
-CREATE POLICY compras_delete ON public.compras FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND rol = 'admin')
-);
+CREATE POLICY compras_delete ON public.compras
+  FOR DELETE TO authenticated
+  USING (public.mi_rol() IN ('admin', 'supervisor'));
 
 -- FOTOS_ORDEN
+-- Solo se ven las fotos de ordenes que el usuario puede ver. Y se borran las
+-- propias o, si sos admin, cualquiera: es la misma regla que ya aplica la UI
+-- en PhotoGallery.jsx. No hay edicion de foto, solo alta y baja.
+DROP POLICY IF EXISTS fotos_orden_update ON public.fotos_orden;
+
 DROP POLICY IF EXISTS fotos_orden_select ON public.fotos_orden;
-CREATE POLICY fotos_orden_select ON public.fotos_orden FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY fotos_orden_select ON public.fotos_orden
+  FOR SELECT TO authenticated
+  USING (public.puede_ver_orden(orden_id));
 
 DROP POLICY IF EXISTS fotos_orden_insert ON public.fotos_orden;
-CREATE POLICY fotos_orden_insert ON public.fotos_orden FOR INSERT WITH CHECK (
-  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor', 'tecnico'))
-);
-
-DROP POLICY IF EXISTS fotos_orden_update ON public.fotos_orden;
-CREATE POLICY fotos_orden_update ON public.fotos_orden FOR UPDATE USING (
-  EXISTS (SELECT 1 FROM public.perfiles WHERE id = auth.uid() AND rol IN ('admin', 'supervisor'))
-  OR created_by = auth.uid()
-);
+CREATE POLICY fotos_orden_insert ON public.fotos_orden
+  FOR INSERT TO authenticated
+  -- created_by tambien: sin esto un tecnico podria colgar su foto de otra
+  -- orden y queda registrada a nombre de otro.
+  WITH CHECK (public.puede_ver_orden(orden_id) AND created_by = auth.uid());
 
 DROP POLICY IF EXISTS fotos_orden_delete ON public.fotos_orden;
-CREATE POLICY fotos_orden_delete ON public.fotos_orden FOR DELETE USING (
-  EXISTS (SELECT 1 FROM public.profiles WHERE id = auth.uid() AND rol = 'admin')
-  OR created_by = auth.uid()
-);
+CREATE POLICY fotos_orden_delete ON public.fotos_orden
+  FOR DELETE TO authenticated
+  USING (public.mi_rol() = 'admin' OR created_by = auth.uid());
 
 -- LOGS_ORDEN (append-only)
+-- Es el historial de cambios de cada orden y la app lo lee en el detalle
+-- (api.js, fetchLogs). Sin RLS cualquier tecnico lee la bitacora de ordenes
+-- ajenas. Ahora solo se ve la de lo que el usuario puede ver, y se puede
+-- agregar pero no reescribir el historial.
 DROP POLICY IF EXISTS logs_orden_select ON public.logs_orden;
-CREATE POLICY logs_orden_select ON public.logs_orden FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY logs_orden_select ON public.logs_orden
+  FOR SELECT TO authenticated
+  USING (public.puede_ver_orden(orden_id));
 
 DROP POLICY IF EXISTS logs_orden_insert ON public.logs_orden;
-CREATE POLICY logs_orden_insert ON public.logs_orden FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY logs_orden_insert ON public.logs_orden
+  FOR INSERT TO authenticated
+  WITH CHECK (public.puede_ver_orden(orden_id));
+
+REVOKE UPDATE, DELETE ON public.logs_orden FROM authenticated;
 
 -- LOGS_COMPRA (append-only)
+-- Mismo criterio que logs_orden, con puede_ver_compra.
 DROP POLICY IF EXISTS logs_compra_select ON public.logs_compra;
-CREATE POLICY logs_compra_select ON public.logs_compra FOR SELECT USING (auth.role() = 'authenticated');
+CREATE POLICY logs_compra_select ON public.logs_compra
+  FOR SELECT TO authenticated
+  USING (public.puede_ver_compra(compra_id));
 
 DROP POLICY IF EXISTS logs_compra_insert ON public.logs_compra;
-CREATE POLICY logs_compra_insert ON public.logs_compra FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY logs_compra_insert ON public.logs_compra
+  FOR INSERT TO authenticated
+  WITH CHECK (public.puede_ver_compra(compra_id));
+
+REVOKE UPDATE, DELETE ON public.logs_compra FROM authenticated;
 
 -- 7. REALTIME
 -- useRealtime.js (src/hooks) se suscribe a postgres_changes en public.ordenes.
