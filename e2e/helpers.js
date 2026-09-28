@@ -38,9 +38,10 @@ export function idDeTecnicoE2E() {
   return id
 }
 
-// Editar y completar ordenes pasan por funciones SECURITY DEFINER que todavia
-// no estan en la base: sin correr interno/aplicar_rls_ordenes.sql no hay forma
-// de probarlas de punta a punta. Los guards de UI, en cambio, ya se pueden.
+// Editar y completar ordenes pasan por funciones SECURITY DEFINER que viven en
+// la base desde la migracion de permisos. Los tests que las exercised de punta a
+// punta se saltan solas mientras E2E_PERMISOS valga 0, para que el repo siga
+// siendo clonable contra una base sin los permisos.
 export function migracionDePermisosAplicada() {
   return process.env.E2E_PERMISOS === '1'
 }
@@ -71,5 +72,7 @@ async function loginCon(page, email, password) {
   await campo.fill(email)
   await page.fill('input[type="password"]', password)
   await page.click('button[type="submit"]')
-  await expect(page).toHaveURL('/')
+  // Timeout propio porque la redireccion depende de un round trip a Supabase
+  // Auth: con el default de 5s fallo una vez con el boton en "Procesando...".
+  await expect(page).toHaveURL('/', { timeout: 20_000 })
 }

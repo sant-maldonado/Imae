@@ -63,8 +63,10 @@ test.describe('permisos por rol', () => {
       !migracionDePermisosAplicada(),
       'Setear E2E_PERMISOS=1 despues de aplicar interno/aplicar_rls_ordenes.sql'
     )
+    test.skip(!hayCredencialesDeTecnico(), 'Faltan E2E_TECNICO_* en el .env')
     await login(page)
-    await crearOrden(page, MARCA_EDITAR)
+    // Necesita un tecnico asignado porque el select es obligatorio para crear.
+    await crearOrden(page, MARCA_EDITAR, String(idDeTecnicoE2E()))
     await abrirOrden(page, MARCA_EDITAR)
 
     await page.click('a:has-text("Editar")')
