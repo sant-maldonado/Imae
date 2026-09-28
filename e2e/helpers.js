@@ -24,6 +24,20 @@ export function hayCredencialesDeOperador() {
   return Boolean(process.env.E2E_OPERADOR_EMAIL && process.env.E2E_OPERADOR_PASSWORD)
 }
 
+// El id de la fila en la tabla tecnicos del usuario E2E_TECNICO_EMAIL. Va en el
+// .env y no hardcodeado en el spec porque es un int que existe en la DB real y
+// puede cambiar: el select de asignacion se elige por value, no por nombre (dos
+// tecnicos pueden llamarse igual).
+export function idDeTecnicoE2E() {
+  const id = Number(process.env.E2E_TECNICO_ID)
+  if (!Number.isInteger(id) || id <= 0) {
+    throw new Error(
+      'Falta E2E_TECNICO_ID en el .env: es el id de la fila de E2E_TECNICO_EMAIL en la tabla tecnicos.'
+    )
+  }
+  return id
+}
+
 // Editar y completar ordenes pasan por funciones SECURITY DEFINER que todavia
 // no estan en la base: sin correr interno/aplicar_rls_ordenes.sql no hay forma
 // de probarlas de punta a punta. Los guards de UI, en cambio, ya se pueden.
@@ -33,11 +47,7 @@ export function migracionDePermisosAplicada() {
 
 export async function login(page) {
   const { EMAIL, PASSWORD } = credenciales()
-  await page.goto('/login')
-  await page.fill('input[type="email"]', EMAIL)
-  await page.fill('input[type="password"]', PASSWORD)
-  await page.click('button[type="submit"]')
-  await expect(page).toHaveURL('/')
+  return loginCon(page, EMAIL, PASSWORD)
 }
 
 export async function loginComoTecnico(page) {
@@ -53,7 +63,12 @@ async function loginCon(page, email, password) {
     throw new Error('Faltan las credenciales del rol en el .env.')
   }
   await page.goto('/login')
-  await page.fill('input[type="email"]', email)
+  const campo = page.locator('input[type="email"]')
+  // Si quedo la sesion de otro rol, /login redirige al dashboard y este input
+  // nunca aparece. Sin este assert el fill se queda esperando hasta el timeout
+  // y el error dice "test timeout" en vez de "sesion colada".
+  await expect(campo).toBeVisible()
+  await campo.fill(email)
   await page.fill('input[type="password"]', password)
   await page.click('button[type="submit"]')
   await expect(page).toHaveURL('/')
