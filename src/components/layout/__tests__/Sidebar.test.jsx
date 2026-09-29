@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { TestWrapper } from '../../../test/TestWrapper'
 import Sidebar from '../Sidebar'
 
@@ -86,5 +87,34 @@ describe('Sidebar', () => {
   it('has logout button', () => {
     render(<Sidebar onClose={() => {}} />, { wrapper: TestWrapper })
     expect(screen.getByText('Cerrar sesión')).toBeInTheDocument()
+  })
+})
+
+describe('Sidebar - promo de instalacion', () => {
+  it('ofrece agregar a la pantalla cuando la app se puede instalar', () => {
+    render(<Sidebar onClose={() => {}} instalable onInstall={vi.fn()} />, { wrapper: TestWrapper })
+    expect(screen.getByText('Agregar a la pantalla')).toBeInTheDocument()
+  })
+
+  it('no lo ofrece si la app ya esta instalada o no se puede instalar', () => {
+    render(<Sidebar onClose={() => {}} instalable={false} onInstall={vi.fn()} />, { wrapper: TestWrapper })
+    expect(screen.queryByText('Agregar a la pantalla')).not.toBeInTheDocument()
+  })
+
+  it('lo esconde si nadie lo pasa, como en los renders sueltos', () => {
+    render(<Sidebar onClose={() => {}} />, { wrapper: TestWrapper })
+    expect(screen.queryByText('Agregar a la pantalla')).not.toBeInTheDocument()
+  })
+
+  it('al tocarlo abre el prompt y cierra el drawer', async () => {
+    const onInstall = vi.fn()
+    const onClose = vi.fn()
+    render(<Sidebar onClose={onClose} instalable onInstall={onInstall} />, { wrapper: TestWrapper })
+
+    await userEvent.click(screen.getByText('Agregar a la pantalla'))
+
+    expect(onInstall).toHaveBeenCalledTimes(1)
+    // El sidebar en el celu es un drawer: si queda abierto tapa el sheet.
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })

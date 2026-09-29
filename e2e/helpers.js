@@ -76,3 +76,12 @@ async function loginCon(page, email, password) {
   // Auth: con el default de 5s fallo una vez con el boton en "Procesando...".
   await expect(page).toHaveURL('/', { timeout: 20_000 })
 }
+
+// El prompt de instalacion no molesta a estos specs por construccion, no por
+// suerte: solo se abre solo en iOS/macOS/Android o cuando Chrome dispara
+// beforeinstallprompt, y aca el userAgent es el de Chromium de escritorio
+// corriendo contra el dev server, donde el manifest ni se genera porque
+// devOptions esta en false. Si alguna vez se emula un movil en
+// playwright.config.js, el overlay z-50 va a interceptar los clicks y hay que
+// empezar a marcar installDismissed antes de cargar.
+export const CLAVE_PROMPT = 'installDismissed'

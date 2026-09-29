@@ -1,5 +1,5 @@
 import { NavLink, Link } from 'react-router-dom'
-import { FiTool, FiSun, FiMoon } from 'react-icons/fi'
+import { FiTool, FiSun, FiMoon, FiDownload } from 'react-icons/fi'
 import { useAuth } from '../../context/AuthContext'
 import { useTheme } from '../../context/ThemeContext'
 import { puede } from '../../lib/permissions'
@@ -14,7 +14,7 @@ const links = [
   { to: '/reportes', label: 'Reportes', icon: '📈', requiere: 'verReportes' },
 ]
 
-export default function Sidebar({ onClose }) {
+export default function Sidebar({ onClose, instalable, onInstall }) {
   const { perfil, logout } = useAuth()
   const { dark, toggle } = useTheme()
   const visibles = links.filter((l) => !l.requiere || puede(perfil?.rol, l.requiere))
@@ -48,7 +48,18 @@ export default function Sidebar({ onClose }) {
           </NavLink>
         ))}
       </nav>
-      <div className="px-4 py-2 border-t border-slate-700">
+      <div className="px-4 py-2 border-t border-slate-700 space-y-1">
+        {/* Segunda chance para el que cerro el sheet. Es el unico lugar
+            siempre visible en el celu, donde el menu es un drawer. */}
+        {instalable && (
+          <button
+            onClick={() => { onInstall?.(); onClose?.() }}
+            className="flex items-center gap-3 w-full px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <FiDownload className="w-4 h-4" />
+            Agregar a la pantalla
+          </button>
+        )}
         <button
           onClick={toggle}
           className="flex items-center gap-3 w-full px-3 py-2 text-sm text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
