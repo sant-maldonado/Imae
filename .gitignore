@@ -26,8 +26,13 @@ dist-ssr
 # Project specific
 .env
 test-results/
+test-results-demo/
 playwright-report/
 coverage/
+
+# Videos de presentacion: son binarios de varios MB y se regeneran con
+# `npx playwright test --config=playwright.demo.config.js`.
+videos/
 
 # Archivos internos de desarrollo: nunca se versionan
 /interno/

@@ -21,6 +21,39 @@ npm run build        # vite build
 npm run test:e2e     # Playwright, levanta su propio server
 ```
 
+## Videos de presentación
+
+Dos videos para mostrarle al cliente: `admin.mp4` y `tecnico.mp4`. Se graban
+contra producción, no contra un build local, y salen en `videos/` (ignorado por
+Git, no se commitean).
+
+```bash
+node e2e-demo/preparar.mjs                                    # datos limpios
+npx playwright test --config=playwright.demo.config.js admin
+npx playwright test --config=playwright.demo.config.js tecnico
+node e2e-demo/limpiar.mjs --si                                # chequear (no borra)
+node e2e-demo/limpiar.mjs                                     # borrar de verdad
+```
+
+- Un spec por corrida. Playwright limpia `outputDir` al empezar, así que el
+  teardown copia el `.webm` y lo convierte antes de que el video anterior se
+  pierda. Por eso no se pueden pasar los dos specs en la misma corrida.
+- Sale `.mp4` (H.264/yuv420p, lo que WhatsApp reproduce), `.webm` crudo,
+  `.srt` y `.guion.md` con los tiempos reales, más `orden-muestra.pdf`.
+- Los videos son mudos a propósito: la voz la graba el usuario. El `.guion.md` y
+  el `.srt` están para eso.
+- `preparar.mjs` borra y recrea las dos órdenes de demo, porque el video del
+  técnico completa la suya y una segunda corrida la encontraría ya cerrada.
+- No se puede verificar el video mirando: el autcheck de `escena()` comprueba que
+  la leyenda se ve, tiene el texto del guion y no desborda, pero el resultado
+  final lo tiene que mirar una persona.
+- `limpiar.mjs` sin argumentos **borra**; con `--si` solo lista. Solo toca
+  registros con prefijo `Presentacion IMAE - `.
+- Los datos que toca `preparar.mjs` son reales. Antes de correrlo otra vez,
+  revisar qué borra: en una corrida anterior desvinculó la compra #144
+  (Rosarpin) porque apuntaba a una orden de prueba que el usuario autorizó
+  borrar.
+
 ## Orden de verificación
 
 1. `npm run test:run`

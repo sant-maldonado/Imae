@@ -73,7 +73,11 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.js',
     css: true,
-    exclude: ['e2e/**', 'e2e-pwa/**', 'node_modules/**'],
+    // e2e-demo va aparte porque los specs son de Playwright: importan
+    // @playwright/test, corren contra produccion y graban video. Vitest los
+    // recolectaba igual por el glob *.spec.js y los contaba como suites
+    // falladas.
+    exclude: ['e2e/**', 'e2e-pwa/**', 'e2e-demo/**', 'node_modules/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html'],
