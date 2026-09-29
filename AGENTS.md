@@ -30,7 +30,9 @@ Git, no se commitean).
 ```bash
 node e2e-demo/preparar.mjs                                    # datos limpios
 npx playwright test --config=playwright.demo.config.js admin
+node e2e-demo/voz.mjs admin                                   # le pone la voz
 npx playwright test --config=playwright.demo.config.js tecnico
+node e2e-demo/voz.mjs tecnico
 node e2e-demo/limpiar.mjs --si                                # chequear (no borra)
 node e2e-demo/limpiar.mjs                                     # borrar de verdad
 ```
@@ -40,13 +42,27 @@ node e2e-demo/limpiar.mjs                                     # borrar de verdad
   pierda. Por eso no se pueden pasar los dos specs en la misma corrida.
 - Sale `.mp4` (H.264/yuv420p, lo que WhatsApp reproduce), `.webm` crudo,
   `.srt` y `.guion.md` con los tiempos reales, más `orden-muestra.pdf`.
-- Los videos son mudos a propósito: la voz la graba el usuario. El `.guion.md` y
-  el `.srt` están para eso.
-- `preparar.mjs` borra y recrea las dos órdenes de demo, porque el video del
-  técnico completa la suya y una segunda corrida la encontraría ya cerrada.
-- No se puede verificar el video mirando: el autcheck de `escena()` comprueba que
-  la leyenda se ve, tiene el texto del guion y no desborda, pero el resultado
-  final lo tiene que mirar una persona.
+- **Los videos van con voz.** `voz.mjs` lee el `.srt` de la corrida, genera un
+  audio por frase con `edge-tts` y lo empasta en el milisegundo exacto en que
+  aparece cada subtítulo. El mudo se guarda aparte como `<rol>-sin-voz.mp4`.
+- La voz necesita `pip install edge-tts` y se llama como `python -m edge_tts`
+  (el ejecutable no queda en el PATH de una sesión vieja de PowerShell). Las
+  voces es-AR que hay son Elena y Tomas; no existe ninguna "Joaquin".
+- **Si cambiás el texto de una escena, primero `node e2e-demo/voz.mjs --medir`.**
+  Imprime los milisegundos que debería tener cada escena. Los tiempos que hay
+  ahora en los specs salen de ahí, no están estimados a ojo: la voz es más lenta
+  de lo que parece (~2,2 palabras por segundo) y si la escena queda corta la
+  frase se corta con ella. `--medir` regenera los clips de medición, no toca los
+  del video.
+- Los clips sueltos quedan en `videos/voz/<rol>/NN-slug.mp3`. Si alguno no te
+  gusta, lo regrabás con lo que quieras, lo guardás con el mismo nombre y
+  corrés `voz.mjs` de nuevo: el archivo se reutiliza sin volver a pedirle nada
+  a Microsoft. Por eso conviene no borrar esa carpeta entre corridas.
+- No se puede verificar el video mirando ni escuchando. El autcheck de `escena()`
+  comprueba que la leyenda se ve, tiene el texto del guion y no desborda, y
+  `voz.mjs` mide el nivel de audio de cada ventana del `.srt` para confirmar que
+  hay voz donde aparece el texto. El resultado final lo tiene que mirar y
+  escuchar una persona.
 - `limpiar.mjs` sin argumentos **borra**; con `--si` solo lista. Solo toca
   registros con prefijo `Presentacion IMAE - `.
 - Los datos que toca `preparar.mjs` son reales. Antes de correrlo otra vez,

@@ -1,5 +1,20 @@
 ﻿import { test, expect } from '@playwright/test'
-import { reiniciar, montarOverlay, escena, cartela, irA, marcaVisible, leyenda, escribirGuion, ingresar } from './ayuda.js'
+import {
+  reiniciar,
+  montarOverlay,
+  escena,
+  cartela,
+  irA,
+  marcaVisible,
+  escribirGuion,
+  ingresar,
+} from './ayuda.js'
+
+// Los milisegundos de cada escena NO son una estimacion: son el largo real del
+// audio de esa frase mas 350ms de aire, dividido por el RITMO de ayuda.js. La
+// voz manda sobre el texto, no al revés. Si se cambia una frase hay que volver
+// a medirla (ver la seccion de videos de AGENTS.md) antes de regrabar, o la
+// voz se corta o la escena queda mirando al vacio.
 
 test('video de presentacion: tecnico', async ({ page }) => {
   reiniciar()
@@ -13,15 +28,12 @@ test('video de presentacion: tecnico', async ({ page }) => {
   await montarOverlay(page)
 
   // ---------------------------------------------------------------- portada
-  await cartela(
-    page,
-    'IMAE',
-    'Para el tecnico, en el taller, desde el celular',
-    3400
-  )
+  await cartela(page, 'IMAE', 'Para el técnico, en el taller, desde el celular', 3840)
 
   // ----------------------------------------------------------------- ingreso
-  await leyenda(page, 'Cada uno entra con su usuario')
+  // escena() y no leyenda(): la segunda solo pinta el texto y no lo anota en el
+  // guion, asi que el audio de esa frase no tendria donde apoyarse.
+  await escena(page, 'Cada uno entra con su usuario', 2030)
   await ingresar(page, process.env.E2E_TECNICO_EMAIL, process.env.E2E_TECNICO_PASSWORD)
   await marcaVisible(page, true)
 
@@ -31,22 +43,22 @@ test('video de presentacion: tecnico', async ({ page }) => {
   // tarjeta de perfil, cuantas tiene asignadas.
   await expect(page.getByTestId('stat-pendientes')).toBeVisible()
   await expect(page.getByText('Órdenes asignadas a vos')).toBeVisible({ timeout: 20000 })
-  await escena(page, 'El tecnico ve el estado de SU trabajo, no el de todo el taller', 3600)
+  await escena(page, 'El técnico ve el estado de SU trabajo, no el de todo el taller', 3320)
 
   // ---------------------------------------------------------------- ordenes
   await irA(page, 'Órdenes')
   await expect(page.getByPlaceholder('Buscar por título...')).toBeVisible()
-  await escena(page, 'Solo las ordenes que tiene asignadas', 3200)
+  await escena(page, 'Solo las órdenes que tiene asignadas', 2340)
 
   // ------------------------------------------- detalle y avance del trabajo
   await page.getByPlaceholder('Buscar por título...').fill('Mantenimiento preventivo')
   const fila = page.locator('tbody tr', { hasText: 'Mantenimiento preventivo' }).first()
   await expect(fila).toBeVisible()
-  await escena(page, 'Busca la suya y abre la ficha', 2200)
+  await escena(page, 'Busca la suya y abre la ficha', 2130)
   await fila.locator('a:has-text("Ver detalle")').click()
   await expect(page.getByText('Fotos de avance')).toBeVisible({ timeout: 20000 })
   await marcaVisible(page, false)
-  await escena(page, 'Ve el detalle completo, con su historial', 3200)
+  await escena(page, 'Ve el detalle completo, con su historial', 2550)
 
   await marcaVisible(page, true)
   // El boton de una orden de trabajo es "Completar". El "Marcar En Curso" que
@@ -54,7 +66,7 @@ test('video de presentacion: tecnico', async ({ page }) => {
   try {
     await page.click('button:has-text("Completar")')
     await expect(page.getByRole('button', { name: 'Completar' })).toHaveCount(0, { timeout: 15000 })
-    await escena(page, 'Cuando termina, la marca como completada y el taller lo sabe al toque', 3400)
+    await escena(page, 'Cuando termina, la marca como completada y el taller lo sabe al toque', 3480)
   } catch (e) {
     console.log(`  (no se pudo completar la orden: ${e.message})`)
   }
@@ -69,18 +81,18 @@ test('video de presentacion: tecnico', async ({ page }) => {
   const selectTecnico = page.getByLabel('Técnico (vos)')
   await expect(selectTecnico).toBeVisible({ timeout: 20000 })
   await expect(selectTecnico.locator('option')).toHaveCount(2)
-  await escena(page, 'Puede dar de alta una orden, pero solo puede asignarsela a si mismo', 3600)
+  await escena(page, 'Puede dar de alta una orden, pero solo puede asignársela a sí mismo', 3510)
 
   await page.getByLabel('Título').fill('Presentacion IMAE - Ajuste de mesa')
-  await page.getByLabel('Descripción').fill('Ajuste de la mesa y verificacion de paralelismo.')
+  await page.getByLabel('Descripción').fill('Ajuste de la mesa y verificación de paralelismo.')
   await selectTecnico.selectOption({ index: 1 })
   await page.getByLabel('Fecha Programada').fill('2026-10-20')
   await page.waitForTimeout(900)
-  await escena(page, 'La carga en el momento, en el taller, sin volver a la oficina', 3200)
+  await escena(page, 'La carga en el momento, en el taller, sin volver a la oficina', 3270)
 
   await page.click('button:has-text("Crear Orden")')
   await expect(page).toHaveURL('/ordenes')
-  await escena(page, 'Y ya esta en el sistema', 2800)
+  await escena(page, 'Y ya está en el sistema', 1780)
 
   // ------------------------------------------------- se instala como una app
   // Se abre desde el item del sidebar y no esperando que aparezca solo: el
@@ -90,15 +102,16 @@ test('video de presentacion: tecnico', async ({ page }) => {
     await page.locator('aside').getByRole('button', { name: 'Agregar a la pantalla' }).click()
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 15000 })
     await marcaVisible(page, false)
-    await escena(page, 'Y se instala en el celular como una app, con icono propio', 3800)
+    await escena(page, 'Y se instala en el celular como una app, con icono propio', 3020)
     await page.keyboard.press('Escape')
   } catch (e) {
     console.log(`  (no se pudo abrir el cartel de instalacion: ${e.message})`)
   }
 
   // ----------------------------------------------------------------- cierre
+  // El dominio no se narra (suena mal en voz alta) pero queda en pantalla.
   await marcaVisible(page, true)
-  await cartela(page, 'IMAE', 'imae-nu.vercel.app · Control de mantenimiento', 3600)
+  await cartela(page, 'IMAE', 'imae-nu.vercel.app · Control de mantenimiento', 2890)
 
   const { guion, srt } = escribirGuion('tecnico')
   console.log(`guion: ${guion}`)
