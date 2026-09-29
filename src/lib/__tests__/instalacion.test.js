@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   CLAVE,
+  DIAS_REAPARICION,
   PASOS,
+  descartadaVigente,
   detectarPlataformaManual,
   esIOS,
   esSafariReal,
+  marcarDescartada,
   soportaEvento,
   yaEstaInstalada,
 } from '../instalacion'
@@ -264,5 +267,67 @@ describe('instalacion - copy', () => {
         expect(typeof paso.texto).toBe('string')
       }
     }
+  })
+})
+
+describe('instalacion - el descarte se vence', () => {
+  // En el celu no hay DevTools para limpiar la clave, asi que si el descarte no
+  // tiene vencimiento el cartel no vuelve nunca. Un toque perdido en la X era
+  // suficiente para perderlo para siempre.
+  const DIA = 86_400_000
+
+  beforeEach(() => {
+    localStorage.clear()
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-01T12:00:00Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('guarda la hora del descarte, no un flag', () => {
+    marcarDescartada()
+    expect(Number(localStorage.getItem(CLAVE))).toBe(Date.now())
+  })
+
+  it('inmediatamente despues sigue vigente', () => {
+    marcarDescartada()
+    expect(descartadaVigente()).toBe(true)
+  })
+
+  it('aguanta hasta el ultimo momento del plazo', () => {
+    marcarDescartada()
+    vi.setSystemTime(new Date(Date.now() + DIAS_REAPARICION * DIA - 1000))
+    expect(descartadaVigente()).toBe(true)
+  })
+
+  it('al cumplirse el plazo deja de suprimir, y el cartel vuelve solo', () => {
+    marcarDescartada()
+    vi.setSystemTime(new Date(Date.now() + DIAS_REAPARICION * DIA + 1000))
+    expect(descartadaVigente()).toBe(false)
+  })
+
+  it('el "1" de las versiones viejas esta vencido, sin migracion', () => {
+    localStorage.setItem(CLAVE, '1')
+    expect(descartadaVigente()).toBe(false)
+  })
+
+  it('una basura tampoco suprime: no se puede dejar trabado el cartel', () => {
+    for (const basura of ['', 'si', 'null', 'NaN', '0', '-1']) {
+      localStorage.setItem(CLAVE, basura)
+      expect(descartadaVigente()).toBe(false)
+    }
+  })
+
+  it('sin nada guardado no hay descarte', () => {
+    expect(descartadaVigente()).toBe(false)
+  })
+
+  it('un reloj que atrasa no resurrecta el descarte para siempre', () => {
+    marcarDescartada()
+    vi.setSystemTime(new Date(Date.now() - DIA))
+    // Sigue vigente, que es lo tolerable: es peor dejar de suppressar que alargar.
+    expect(descartadaVigente()).toBe(true)
   })
 })

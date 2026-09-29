@@ -153,16 +153,25 @@ describe('Login page - aviso de instalacion', () => {
 
     await user.click(screen.getByRole('button', { name: 'No mostrar de nuevo' }))
 
-    expect(localStorage.getItem('installDismissed')).toBe('1')
+    expect(Number(localStorage.getItem('installDismissed'))).toBeGreaterThan(1_600_000_000_000)
     expect(screen.queryByRole('region', { name: 'Instalar IMAE' })).not.toBeInTheDocument()
   })
 
-  it('no vuelve a aparecer si ya la habian descartado antes', () => {
-    localStorage.setItem('installDismissed', '1')
+  it('no vuelve a aparecer si la habian descartado hace poco', () => {
+    localStorage.setItem('installDismissed', String(Date.now()))
     definir(UA_IPHONE, 'userAgent')
     render(<Login />, { wrapper: TestWrapper })
 
     expect(screen.queryByRole('region', { name: 'Instalar IMAE' })).not.toBeInTheDocument()
+  })
+
+  it('vuelve a aparecer cuando el descarte se vence, sin DevTools', () => {
+    const DIA = 86_400_000
+    localStorage.setItem('installDismissed', String(Date.now() - 8 * DIA))
+    definir(UA_IPHONE, 'userAgent')
+    render(<Login />, { wrapper: TestWrapper })
+
+    expect(screen.getByRole('region', { name: 'Instalar IMAE' })).toBeInTheDocument()
   })
 
   it('tampoco aparece si la app ya esta instalada', () => {

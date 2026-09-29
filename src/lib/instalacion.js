@@ -8,6 +8,13 @@
 
 export const CLAVE = 'installDismissed'
 
+// El descarte no es eterno. Sin vencimiento, en el celu no hay forma de recuperar
+// el cartel: no hay DevTools para limpiar la clave, y la nota del login tampoco
+// ayuda porque se oculta con el mismo descarte. Un toque perdido en la X dejaba
+// al usuario sin prompt para siempre. Con el plazo, vuelve solo.
+export const DIAS_REAPARICION = 7
+const MS_POR_DIA = 86_400_000
+
 // Los nombres de los items de menu cambian por idioma, asi que cada paso
 // describe donde mirarlo ademas de citar la etiqueta.
 export const PASOS = {
@@ -87,4 +94,18 @@ export function detectarPlataformaManual() {
   // quedarse en null para no ofrecer un menu que no existe.
   if (soportaEvento()) return 'desktop'
   return null
+}
+
+// Que el descarte siga vigente, o sea que el usuario todavia no esta en el plazo
+// de calma. El valor legacy '1' no necesita migracion: Number('1') es epoch ms
+// de 1970, o sea vencido, asi que a todo el mundo le vuelve a salir el cartel una
+// sola vez al deploy. Lo mismo con cualquier basura: no se puede suprimir.
+export function descartadaVigente() {
+  const guardado = Number(localStorage.getItem(CLAVE))
+  if (!Number.isFinite(guardado) || guardado <= 0) return false
+  return Date.now() - guardado < DIAS_REAPARICION * MS_POR_DIA
+}
+
+export function marcarDescartada() {
+  localStorage.setItem(CLAVE, String(Date.now()))
 }

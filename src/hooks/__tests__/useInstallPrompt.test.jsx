@@ -29,6 +29,11 @@ const definirPlatform = (v) => definir(v, 'platform')
 const definirMaxTouchPoints = (v) => definir(v, 'maxTouchPoints')
 const definirStandalone = (v) => definir(v, 'standalone')
 
+// El descarte se guarda como timestamp, asi que "es 1" ya no alcanza para
+// distinguishinglo: un epoch ms real arranca en 2021 y no tiene nada que ver.
+const EPOCH_MINIMO = 1_600_000_000_000
+const guardado = () => Number(localStorage.getItem('installDismissed'))
+
 // El objeto del evento no existe en jsdom, se arma a mano. cancelable para que
 // preventDefault no entre en conflicto.
 function dispararBeforeInstallPrompt({ outcome = 'accepted' } = {}) {
@@ -190,11 +195,17 @@ describe('useInstallPrompt - visibilidad', () => {
     expect(result.current.instalado).toBe(true)
   })
 
-  it('no vuelve a preguntar si ya lo descartaron', () => {
-    localStorage.setItem('installDismissed', '1')
+  it('no vuelve a preguntar si lo descartaron hace poco', () => {
+    localStorage.setItem('installDismissed', String(Date.now()))
     const { result } = renderHook(() => useInstallPrompt())
     expect(result.current.descartada).toBe(true)
     expect(result.current.abierto).toBe(false)
+  })
+
+  it('el "1" de las versiones viejas ya no suprime, y el cartel vuelve', () => {
+    localStorage.setItem('installDismissed', '1')
+    const { result } = renderHook(() => useInstallPrompt())
+    expect(result.current.descartada).toBe(false)
   })
 
   it('en las plataformas manuales espera antes de abrir el sheet', () => {
@@ -249,7 +260,7 @@ describe('useInstallPrompt - instalar y descartar', () => {
     })
 
     expect(evento.prompt).toHaveBeenCalledTimes(1)
-    await waitFor(() => expect(localStorage.getItem('installDismissed')).toBe('1'))
+    await waitFor(() => expect(guardado()).toBeGreaterThan(EPOCH_MINIMO))
     expect(result.current.abierto).toBe(false)
   })
 
@@ -261,7 +272,7 @@ describe('useInstallPrompt - instalar y descartar', () => {
       result.current.instalar()
     })
 
-    await waitFor(() => expect(localStorage.getItem('installDismissed')).toBe('1'))
+    await waitFor(() => expect(guardado()).toBeGreaterThan(EPOCH_MINIMO))
   })
 
   it('gasta el evento, pero la guia de escritorio queda como plan B', async () => {
@@ -288,7 +299,7 @@ describe('useInstallPrompt - instalar y descartar', () => {
 
     act(() => result.current.descartar())
     expect(result.current.abierto).toBe(false)
-    expect(localStorage.getItem('installDismissed')).toBe('1')
+    expect(guardado()).toBeGreaterThan(EPOCH_MINIMO)
   })
 
   it('cerrarTemporal no guarda la preferencia, asi que puede volver a salir', () => {
@@ -302,6 +313,30 @@ describe('useInstallPrompt - instalar y descartar', () => {
     expect(localStorage.getItem('installDismissed')).toBeNull()
     expect(result.current.descartada).toBe(false)
     expect(result.current.instalable).toBe(true)
+  })
+
+  it('el descarte se vence solo, asi que el cartel vuelve sin DevTools', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-03-01T12:00:00Z'))
+    definirUserAgent(UA_IPHONE)
+
+    const primera = renderHook(() => useInstallPrompt())
+    act(() => primera.result.current.descartar())
+    expect(primera.result.current.descartada).toBe(true)
+    primera.unmount()
+
+    // A mitad de plazo todavia no vuelve.
+    vi.setSystemTime(new Date('2026-03-04T12:00:00Z'))
+    const dentro = renderHook(() => useInstallPrompt())
+    expect(dentro.result.current.descartada).toBe(true)
+    dentro.unmount()
+
+    // Vencido: se abre solo, que es el punto de que el plazo exista.
+    vi.setSystemTime(new Date('2026-03-09T12:00:00Z'))
+    const vencida = renderHook(() => useInstallPrompt())
+    expect(vencida.result.current.descartada).toBe(false)
+    act(() => vi.advanceTimersByTime(1000))
+    expect(vencida.result.current.abierto).toBe(true)
   })
 
   it('un toque perdido no deja al usuario sin recuperacion', () => {
@@ -337,7 +372,7 @@ describe('useInstallPrompt - instalar y descartar', () => {
       window.dispatchEvent(new Event('appinstalled'))
     })
 
-    expect(localStorage.getItem('installDismissed')).toBe('1')
+    expect(guardado()).toBeGreaterThan(EPOCH_MINIMO)
     expect(result.current.abierto).toBe(false)
   })
 

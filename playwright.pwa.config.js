@@ -20,10 +20,14 @@ export default defineConfig({
     // Mismo motivo que en playwright.config.js: esta suite corre contra el build
     // real, con manifest y service worker, asi que el aviso se abriria solo y el
     // overlay capturaria los clicks. Aca no hay specs que necesiten el cartel.
+    // El timestamp va con la hora actual porque la app lo toma como vigente.
     storageState: {
       cookies: [],
       origins: [
-        { origin: 'http://localhost:4173', localStorage: [{ name: CLAVE_PROMPT, value: '1' }] },
+        {
+          origin: 'http://localhost:4173',
+          localStorage: [{ name: CLAVE_PROMPT, value: String(Date.now()) }],
+        },
       ],
     },
   },

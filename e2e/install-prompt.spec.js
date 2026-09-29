@@ -44,7 +44,7 @@ test.describe('prompt de instalacion en iOS', () => {
     expect(caja.y).toBeGreaterThan(boton.y + boton.height)
   })
 
-  test('descartar la nota la saca para siempre', async ({ page }) => {
+  test('descartar la nota la saca, y sigue sacada mientras dure el plazo', async ({ page }) => {
     await page.goto('/login')
     await expect(nota(page)).toBeVisible()
     await nota(page).getByRole('button', { name: 'No mostrar de nuevo' }).click()
@@ -52,6 +52,18 @@ test.describe('prompt de instalacion en iOS', () => {
 
     await page.reload()
     await expect(nota(page)).toHaveCount(0)
+  })
+
+  // En el celu no hay DevSettings, asi que un descarte sin vencimiento dejaba al
+  // usuario sin prompt para siempre. Este caso es el que evita esa trampita.
+  test('el descarte vencido deja que el cartel vuelva solo', async ({ page }) => {
+    await page.addInitScript(() => {
+      const DIA = 86_400_000
+      localStorage.setItem('installDismissed', String(Date.now() - 8 * DIA))
+    })
+    await page.goto('/login')
+
+    await expect(nota(page)).toBeVisible()
   })
 
   test('aparece solo, se cierra con Escape y se reabre desde el sidebar', async ({ page }) => {
@@ -75,7 +87,7 @@ test.describe('prompt de instalacion en iOS', () => {
   // Escape cierra pero no decide: si quemara la preferencia, un toque perdido en
   // el overlay (que en un celular es toda la pantalla) dejaria al tecnico sin
   // aviso y sin recuperacion.
-  test('cerrar con Escape no lo descarta para siempre', async ({ page }) => {
+  test('cerrar con Escape no consume el descarte', async ({ page }) => {
     await login(page)
     const sheet = page.getByRole('dialog')
     await expect(sheet).toBeVisible({ timeout: 10_000 })
@@ -89,7 +101,7 @@ test.describe('prompt de instalacion en iOS', () => {
     await expect(sheet).toBeVisible({ timeout: 10_000 })
   })
 
-  test('descartar con el boton si lo saca para siempre', async ({ page }) => {
+  test('descartar con el boton lo saca mientras dure el plazo', async ({ page }) => {
     await login(page)
     const sheet = page.getByRole('dialog')
     await expect(sheet).toBeVisible({ timeout: 10_000 })

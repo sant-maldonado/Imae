@@ -27,10 +27,17 @@ export default defineConfig({
     // no se aplica: el callback no llega a ejecutarse. storageState siembra el
     // origen antes de la primera navegacion, y encima se pisa por test, que es lo
     // que necesitan los specs del aviso (ver install-prompt.spec.js).
+    //
+    // El valor va con timestamp, no con un '1': la app guarda la hora del descarte
+    // para que venza, y un '1' ya esta vencido, con lo cual el overlay volveria a
+    // aparecer y a capturar los clicks de todos los specs.
     storageState: {
       cookies: [],
       origins: [
-        { origin: 'http://localhost:5173', localStorage: [{ name: CLAVE_PROMPT, value: '1' }] },
+        {
+          origin: 'http://localhost:5173',
+          localStorage: [{ name: CLAVE_PROMPT, value: String(Date.now()) }],
+        },
       ],
     },
   },

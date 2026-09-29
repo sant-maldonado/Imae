@@ -82,4 +82,8 @@ async function loginCon(page, email, password) {
 // pagina y el overlay z-50 capturaria los clicks. Por eso los dos configs de
 // Playwright lo siembran en el storageState, y los specs que si necesitan el
 // cartel (install-prompt.spec.js) pisan el storageState por uno vacio.
+//
+// Ojo con el valor: la app guarda la hora del descarte y lo da por vigente
+// mientras no pasan los dias de reaparicion, asi que hay que sembrar un
+// timestamp, no un "1". Un "1" ya esta vencido y el overlay vuelve a aparecer.
 export { CLAVE_PROMPT } from './clave-prompt.js'

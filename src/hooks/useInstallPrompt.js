@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CLAVE, detectarPlataformaManual, soportaEvento, yaEstaInstalada } from '../lib/instalacion'
+import {
+  descartadaVigente,
+  detectarPlataformaManual,
+  marcarDescartada,
+  soportaEvento,
+  yaEstaInstalada,
+} from '../lib/instalacion'
 
 // Retardo antes de abrir la guia sola. Es tambien la ventana de gracia para que
 // dispare el evento: si llega antes, gana el boton Instalar.
@@ -12,7 +18,7 @@ export default function useInstallPrompt() {
   const [plataforma] = useState(detectarPlataformaManual)
   const [escuchaEvento] = useState(soportaEvento)
   const [evento, setEvento] = useState(null)
-  const [descartada, setDescartada] = useState(() => Boolean(localStorage.getItem(CLAVE)))
+  const [descartada, setDescartada] = useState(descartadaVigente)
   const [abierto, setAbierto] = useState(false)
 
   useEffect(() => {
@@ -33,7 +39,7 @@ export default function useInstallPrompt() {
       setAbierto(true)
     }
     const alInstalar = () => {
-      localStorage.setItem(CLAVE, '1')
+      marcarDescartada()
       setAbierto(false)
     }
     window.addEventListener('beforeinstallprompt', alPedirInstalacion)
@@ -58,7 +64,7 @@ export default function useInstallPrompt() {
       .then(() => pendiente.userChoice)
       .catch(() => {})
       .finally(() => {
-        localStorage.setItem(CLAVE, '1')
+        marcarDescartada()
         setDescartada(true)
       })
   }, [evento])
@@ -68,9 +74,10 @@ export default function useInstallPrompt() {
   // oportunidad: esto no escribe la preferencia y vuelve a salir la proxima vez.
   const cerrarTemporal = useCallback(() => setAbierto(false), [])
 
-  // Descartar de verdad, con el boton. Ahi el usuario si dijo que no.
+  // Descartar de verdad, con el boton. Ahi el usuario si dijo que no, pero solo
+  // por el plazo: si lo deixa pasar, el cartel le vuelve a salir solo.
   const descartar = useCallback(() => {
-    localStorage.setItem(CLAVE, '1')
+    marcarDescartada()
     setDescartada(true)
     setAbierto(false)
   }, [])
