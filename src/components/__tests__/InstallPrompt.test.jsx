@@ -5,10 +5,11 @@ import InstallPrompt from '../InstallPrompt'
 
 const propsBase = {
   abierto: true,
-  plataforma: 'otro',
+  plataforma: null,
   evento: null,
   instalar: vi.fn(),
-  cerrar: vi.fn(),
+  cerrarTemporal: vi.fn(),
+  descartar: vi.fn(),
 }
 
 const renderizar = (over = {}) => render(<InstallPrompt {...propsBase} {...over} />)
@@ -36,6 +37,12 @@ describe('InstallPrompt', () => {
     expect(screen.getByRole('dialog')).toHaveFocus()
   })
 
+  it('no promete que funcione sin conexion', () => {
+    renderizar({ plataforma: 'ios' })
+    expect(screen.queryByText(/sin conexi/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/conexión/i)).not.toBeInTheDocument()
+  })
+
   describe('pasos por plataforma', () => {
     it('en iOS guia por Compartir y Agregar a pantalla de inicio', () => {
       renderizar({ plataforma: 'ios' })
@@ -55,8 +62,8 @@ describe('InstallPrompt', () => {
       expect(screen.getByText('Agregar al Dock')).toBeInTheDocument()
     })
 
-    it('sin plataforma conocida no inventa pasos', () => {
-      renderizar({ plataforma: 'otro' })
+    it('sin plataforma no inventa pasos, porque no hay guia que dar', () => {
+      renderizar({ plataforma: null })
       expect(screen.queryByRole('list')).not.toBeInTheDocument()
     })
   })
@@ -80,42 +87,52 @@ describe('InstallPrompt', () => {
     expect(instalar).toHaveBeenCalledTimes(1)
   })
 
-  it('Entendido delega en cerrar', async () => {
-    const cerrar = vi.fn()
-    renderizar({ cerrar })
+  // Solo el descarte explicito escribe la preferencia. Si el fondo o la X
+  // escribieran el flag, un toque perdido dejaria al usuario sin prompt y sin
+  // recuperacion automatica.
+  it('Entendido delega en descartar', async () => {
+    const descartar = vi.fn()
+    renderizar({ descartar })
     await userEvent.click(screen.getByRole('button', { name: 'Entendido' }))
-    expect(cerrar).toHaveBeenCalledTimes(1)
+    expect(descartar).toHaveBeenCalledTimes(1)
   })
 
-  it('la X del titulo delega en cerrar', async () => {
-    const cerrar = vi.fn()
-    renderizar({ cerrar })
-    await userEvent.click(screen.getByRole('button', { name: 'Cerrar' }))
-    expect(cerrar).toHaveBeenCalledTimes(1)
+  it('la X del titulo delega en descartar y lo dice en el nombre accesible', async () => {
+    const descartar = vi.fn()
+    renderizar({ descartar })
+    const boton = screen.getByRole('button', { name: 'No mostrar de nuevo' })
+    await userEvent.click(boton)
+    expect(descartar).toHaveBeenCalledTimes(1)
   })
 
-  it('un click en el fondo cierra y uno dentro del panel no', async () => {
-    const cerrar = vi.fn()
-    renderizar({ cerrar })
+  it('un click en el fondo es un cierre temporal y uno dentro del panel no', async () => {
+    const cerrarTemporal = vi.fn()
+    const descartar = vi.fn()
+    renderizar({ cerrarTemporal, descartar })
 
     await userEvent.click(screen.getByText('Agregar IMAE a tu pantalla'))
-    expect(cerrar).not.toHaveBeenCalled()
+    expect(cerrarTemporal).not.toHaveBeenCalled()
+    expect(descartar).not.toHaveBeenCalled()
 
     await userEvent.click(screen.getByRole('dialog').parentElement)
-    expect(cerrar).toHaveBeenCalledTimes(1)
+    expect(cerrarTemporal).toHaveBeenCalledTimes(1)
+    // Un toque en el fondo no puede descartar de verdad.
+    expect(descartar).not.toHaveBeenCalled()
   })
 
-  it('Escape cierra', () => {
-    const cerrar = vi.fn()
-    renderizar({ cerrar })
+  it('Escape es un cierre temporal', () => {
+    const cerrarTemporal = vi.fn()
+    const descartar = vi.fn()
+    renderizar({ cerrarTemporal, descartar })
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-    expect(cerrar).toHaveBeenCalledTimes(1)
+    expect(cerrarTemporal).toHaveBeenCalledTimes(1)
+    expect(descartar).not.toHaveBeenCalled()
   })
 
   it('otra tecla no cierra', () => {
-    const cerrar = vi.fn()
-    renderizar({ cerrar })
+    const cerrarTemporal = vi.fn()
+    renderizar({ cerrarTemporal })
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }))
-    expect(cerrar).not.toHaveBeenCalled()
+    expect(cerrarTemporal).not.toHaveBeenCalled()
   })
 })

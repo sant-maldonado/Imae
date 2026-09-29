@@ -7,10 +7,45 @@ import { login } from './helpers'
 const UA_IPHONE =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 
+const nota = (page) => page.getByRole('region', { name: 'Instalar IMAE' })
+
 test.describe('prompt de instalacion en iOS', () => {
   // Solo se emula el userAgent. El viewport queda de escritorio para que el
   // sidebar este siempre visible y el test no dependa de abrir el drawer.
   test.use({ userAgent: UA_IPHONE })
+
+  test('aparece sin iniciar sesion, en el login', async ({ page }) => {
+    await page.goto('/login')
+
+    // Este era el hueco: el aviso vivia bajo ProtectedRoute, asi que el que
+    // abria el link desde el celu sin sesion no veia nada.
+    await expect(nota(page)).toBeVisible()
+    await expect(nota(page).getByText('Tocá Compartir')).toBeVisible()
+
+    // Y no tapa el formulario: el login sigue siendo usable.
+    await expect(page.locator('input[type="email"]')).toBeVisible()
+    await expect(page.locator('button[type="submit"]')).toBeVisible()
+  })
+
+  test('la nota va debajo del boton de ingresar', async ({ page }) => {
+    await page.goto('/login')
+    await expect(nota(page)).toBeVisible()
+
+    const enviar = page.locator('button[type="submit"]')
+    const caja = await nota(page).boundingBox()
+    const boton = await enviar.boundingBox()
+    expect(caja.y).toBeGreaterThan(boton.y + boton.height)
+  })
+
+  test('descartar la nota la saca para siempre', async ({ page }) => {
+    await page.goto('/login')
+    await expect(nota(page)).toBeVisible()
+    await nota(page).getByRole('button', { name: 'No mostrar de nuevo' }).click()
+    await expect(nota(page)).toHaveCount(0)
+
+    await page.reload()
+    await expect(nota(page)).toHaveCount(0)
+  })
 
   test('aparece solo, se cierra con Escape y se reabre desde el sidebar', async ({ page }) => {
     await login(page)
@@ -30,7 +65,10 @@ test.describe('prompt de instalacion en iOS', () => {
     await expect(sheet).toBeVisible()
   })
 
-  test('no vuelve a salir solo despues de cerrarlo', async ({ page }) => {
+  // Escape cierra pero no decide: si quemara la preferencia, un toque perdido en
+  // el overlay (que en un celular es toda la pantalla) dejaria al tecnico sin
+  // aviso y sin recuperacion.
+  test('cerrar con Escape no lo descarta para siempre', async ({ page }) => {
     await login(page)
     const sheet = page.getByRole('dialog')
     await expect(sheet).toBeVisible({ timeout: 10_000 })
@@ -38,8 +76,21 @@ test.describe('prompt de instalacion en iOS', () => {
     await expect(sheet).toHaveCount(0)
 
     await page.reload()
-    // El item del sidebar sigue disponible como la via manual.
-    await expect(page.getByText('Agregar a la pantalla')).toBeVisible()
+    // El item del sidebar sigue disponible como via manual. Timeout propio
+    // porque el reload vuelve a pegarle a Supabase Auth para revalidar la sesion.
+    await expect(page.getByText('Agregar a la pantalla')).toBeVisible({ timeout: 20_000 })
+    await expect(sheet).toBeVisible({ timeout: 10_000 })
+  })
+
+  test('descartar con el boton si lo saca para siempre', async ({ page }) => {
+    await login(page)
+    const sheet = page.getByRole('dialog')
+    await expect(sheet).toBeVisible({ timeout: 10_000 })
+    await sheet.getByRole('button', { name: 'Entendido' }).click()
+    await expect(sheet).toHaveCount(0)
+
+    await page.reload()
+    await expect(page.getByText('Agregar a la pantalla')).toBeVisible({ timeout: 20_000 })
     await page.waitForTimeout(1500)
     await expect(sheet).toHaveCount(0)
   })

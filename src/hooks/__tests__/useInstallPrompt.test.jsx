@@ -11,8 +11,14 @@ const UA_IPAD =
 const UA_MAC_SAFARI = UA_IPAD
 const UA_ANDROID =
   'Mozilla/5.0 (Android 14; Mobile; rv:130.0) Gecko/130.0 Firefox/130.0'
+const UA_ANDROID_CHROME =
+  'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'
 const UA_FIREFOX_DESKTOP =
   'Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0'
+const UA_IOS_CHROME =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/131.0.0.0 Mobile/15E148 Safari/604.1'
+const UA_MAC_CHROME =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
 function definir(valor, prop) {
   Object.defineProperty(navigator, prop, { value: valor, configurable: true })
@@ -87,10 +93,85 @@ describe('useInstallPrompt - deteccion de plataforma', () => {
     expect(result.current.plataforma).toBe('android')
   })
 
-  it('deja en otro a Firefox de escritorio, que no instala', () => {
+  it('deja en null a Firefox de escritorio, que no instala', () => {
     definirUserAgent(UA_FIREFOX_DESKTOP)
     const { result } = renderHook(() => useInstallPrompt())
-    expect(result.current.plataforma).toBe('otro')
+    expect(result.current.plataforma).toBeNull()
+  })
+
+  it('no ofrece la guia de iOS en Chrome de iOS, que no puede instalar', () => {
+    definirUserAgent(UA_IOS_CHROME)
+    const { result } = renderHook(() => useInstallPrompt())
+    expect(result.current.plataforma).toBeNull()
+    expect(result.current.instalable).toBe(false)
+  })
+
+  it('no ofrece la guia de macOS en Chrome de macOS, que no tiene Agregar al Dock', () => {
+    definirUserAgent(UA_MAC_CHROME)
+    const { result } = renderHook(() => useInstallPrompt())
+    expect(result.current.plataforma).toBeNull()
+    // Chrome de macOS instala por su propio boton, no por un item de menu, asi
+    // que hasta que no dispare el evento no hay nada que ofrecerle.
+    expect(result.current.instalable).toBe(false)
+  })
+})
+
+describe('useInstallPrompt - no ofrece nada donde no se puede', () => {
+  it('no escucha el evento en iOS, donde es WebKit bajo el capote', () => {
+    definirUserAgent(UA_IOS_CHROME)
+    const quitar = vi.spyOn(window, 'removeEventListener')
+    const { result, unmount } = renderHook(() => useInstallPrompt())
+    const evento = new Event('beforeinstallprompt', { cancelable: true })
+    evento.prompt = vi.fn().mockResolvedValue(undefined)
+    evento.userChoice = Promise.resolve({ outcome: 'accepted' })
+    act(() => {
+      window.dispatchEvent(evento)
+    })
+
+    expect(result.current.evento).toBeNull()
+    expect(result.current.instalable).toBe(false)
+    unmount()
+    expect(quitar).not.toHaveBeenCalledWith('beforeinstallprompt', expect.any(Function))
+  })
+
+  it('en iOS Safari ofrece la guia pero no el boton', () => {
+    definirUserAgent(UA_IPHONE)
+    const { result } = renderHook(() => useInstallPrompt())
+    expect(result.current.plataforma).toBe('ios')
+    expect(result.current.instalable).toBe(true)
+  })
+
+  it('no registra ningun listener si no hay ni evento ni guia', () => {
+    definirUserAgent(UA_FIREFOX_DESKTOP)
+    const quitar = vi.spyOn(window, 'removeEventListener')
+    const { unmount } = renderHook(() => useInstallPrompt())
+    unmount()
+    expect(quitar).not.toHaveBeenCalledWith('beforeinstallprompt', expect.any(Function))
+  })
+})
+
+describe('useInstallPrompt - Android tiene las dos vias', () => {
+  it('abre la guia al cumplirse el retardo aunque el evento no llegue', () => {
+    vi.useFakeTimers()
+    definirUserAgent(UA_ANDROID_CHROME)
+    const { result } = renderHook(() => useInstallPrompt())
+
+    act(() => vi.advanceTimersByTime(1000))
+    expect(result.current.abierto).toBe(true)
+    // Es la guia manual, no el boton de verdad.
+    expect(result.current.evento).toBeNull()
+  })
+
+  it('el sheet que ya estaba abierto sube a boton Instalar si llega el evento', () => {
+    vi.useFakeTimers()
+    definirUserAgent(UA_ANDROID_CHROME)
+    const { result } = renderHook(() => useInstallPrompt())
+
+    act(() => vi.advanceTimersByTime(1000))
+    const evento = dispararBeforeInstallPrompt()
+
+    expect(result.current.evento).toBe(evento)
+    expect(result.current.abierto).toBe(true)
   })
 })
 
@@ -197,23 +278,49 @@ describe('useInstallPrompt - instalar y descartar', () => {
     expect(result.current.instalable).toBe(false)
   })
 
-  it('cerrar guarda la preferencia y oculta el sheet', () => {
+  it('descartar guarda la preferencia y oculta el sheet', () => {
     definirUserAgent(UA_IPHONE)
     const { result } = renderHook(() => useInstallPrompt())
 
     act(() => result.current.abrir())
     expect(result.current.abierto).toBe(true)
 
-    act(() => result.current.cerrar())
+    act(() => result.current.descartar())
     expect(result.current.abierto).toBe(false)
     expect(localStorage.getItem('installDismissed')).toBe('1')
+  })
+
+  it('cerrarTemporal no guarda la preferencia, asi que puede volver a salir', () => {
+    definirUserAgent(UA_IPHONE)
+    const { result } = renderHook(() => useInstallPrompt())
+
+    act(() => result.current.abrir())
+    act(() => result.current.cerrarTemporal())
+
+    expect(result.current.abierto).toBe(false)
+    expect(localStorage.getItem('installDismissed')).toBeNull()
+    expect(result.current.descartada).toBe(false)
+    expect(result.current.instalable).toBe(true)
+  })
+
+  it('un toque perdido no deja al usuario sin recuperacion', () => {
+    definirUserAgent(UA_IPHONE)
+    const { result, rerender } = renderHook(() => useInstallPrompt())
+
+    act(() => result.current.abrir())
+    act(() => result.current.cerrarTemporal())
+    // Remontar es lo que pasa al recargar o al navegar de vuelta.
+    rerender()
+
+    act(() => result.current.abrir())
+    expect(result.current.abierto).toBe(true)
   })
 
   it('abrir a mano funciona aunque ya la hayan descartado', () => {
     definirUserAgent(UA_IPHONE)
     const { result } = renderHook(() => useInstallPrompt())
 
-    act(() => result.current.cerrar())
+    act(() => result.current.descartar())
     act(() => result.current.abrir())
 
     // El item del sidebar es la segunda chance, no se deshabilita solo.

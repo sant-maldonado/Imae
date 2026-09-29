@@ -1,46 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
+import { CLAVE, detectarPlataformaManual, soportaEvento, yaEstaInstalada } from '../lib/instalacion'
 
-const CLAVE = 'installDismissed'
-
-// El manual de web.dev pide esperar a una senal de interes antes de empujar la
-// instalacion. En iOS no hay evento que sirva de senal, asi que se retrasa un
-// poco para no competir con la carga de la primera pantalla.
+// Retardo antes de abrir la guia sola. Es tambien la ventana de gracia para que
+// dispare el evento: si llega antes, gana el boton Instalar.
 const RETARDO_MS = 1000
-
-// iPadOS se reporta como MacIntel, asi que con el userAgent no alcanza y hay
-// que separarlo por maxTouchPoints.
-function esIOS() {
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  )
-}
-
-// La unica senal de que ya esta instalada. En iOS no hay ninguna otra:
-// navigator.standalone es de WebKit y display-mode la sirve el manifest.
-function yaEstaInstalada() {
-  return (
-    window.matchMedia?.('(display-mode: standalone)').matches === true ||
-    window.navigator.standalone === true
-  )
-}
-
-// Que navegador es y si puede instalar. 'otro' agrupa los que no instalan por
-// la via manual y tampoco disparan beforeinstallprompt (Firefox de escritorio),
-// y para esos no hay nada que ofrecer.
-function detectarPlataforma() {
-  if (esIOS()) return 'ios'
-  const ua = navigator.userAgent
-  if (/Android/.test(ua)) return 'android'
-  // Safari de macOS instala a la mano (Archivo > Agregar al Dock) y nunca
-  // dispara el evento, asi que cuenta como via manual.
-  if (/Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|Chromium|CriOS/.test(ua)) return 'mac'
-  return 'otro'
-}
 
 export default function useInstallPrompt() {
   const [instalado] = useState(yaEstaInstalada)
-  const [plataforma] = useState(detectarPlataforma)
+  // plataforma: para que guia manual mostrar, o null si este navegador no tiene.
+  // escuchaEvento: si hay que esperar beforeinstallprompt para ofrecer instalar.
+  const [plataforma] = useState(detectarPlataformaManual)
+  const [escuchaEvento] = useState(soportaEvento)
   const [evento, setEvento] = useState(null)
   const [descartada, setDescartada] = useState(() => Boolean(localStorage.getItem(CLAVE)))
   const [abierto, setAbierto] = useState(false)
@@ -48,27 +18,32 @@ export default function useInstallPrompt() {
   useEffect(() => {
     if (instalado || descartada) return
 
-    if (plataforma === 'otro') {
-      const alPedirInstalacion = (e) => {
-        e.preventDefault()
-        setEvento(e)
-        setAbierto(true)
-      }
-      const alInstalar = () => {
-        localStorage.setItem(CLAVE, '1')
-        setAbierto(false)
-      }
-      window.addEventListener('beforeinstallprompt', alPedirInstalacion)
-      window.addEventListener('appinstalled', alInstalar)
-      return () => {
-        window.removeEventListener('beforeinstallprompt', alPedirInstalacion)
-        window.removeEventListener('appinstalled', alInstalar)
-      }
-    }
+    // Con guia manual se abre sola, pero despues del retardo: es la unica senal
+    // de interes disponible y al menos no compite con la carga de la pantalla.
+    const t = plataforma ? setTimeout(() => setAbierto(true), RETARDO_MS) : null
 
-    const t = setTimeout(() => setAbierto(true), RETARDO_MS)
-    return () => clearTimeout(t)
-  }, [instalado, descartada, plataforma])
+    if (!escuchaEvento) return () => clearTimeout(t)
+
+    // Si el evento llega despues, el sheet que ya estaba abierto pasa a ofrecer
+    // el boton de verdad. En Android puede pasar, y por eso conviven las dos vias
+    // en vez de elegirse una: si el evento nunca llega, la guia es el plan B.
+    const alPedirInstalacion = (e) => {
+      e.preventDefault()
+      setEvento(e)
+      setAbierto(true)
+    }
+    const alInstalar = () => {
+      localStorage.setItem(CLAVE, '1')
+      setAbierto(false)
+    }
+    window.addEventListener('beforeinstallprompt', alPedirInstalacion)
+    window.addEventListener('appinstalled', alInstalar)
+    return () => {
+      clearTimeout(t)
+      window.removeEventListener('beforeinstallprompt', alPedirInstalacion)
+      window.removeEventListener('appinstalled', alInstalar)
+    }
+  }, [instalado, descartada, plataforma, escuchaEvento])
 
   // El evento se puede usar una sola vez, asi que se descarta en el momento.
   // Guardar la preferencia tambien cuando lo rechazan evita que reaparezca en
@@ -88,16 +63,22 @@ export default function useInstallPrompt() {
       })
   }, [evento])
 
-  const cerrar = useCallback(() => {
+  // Cerrar sin decidir. El overlay cubre toda la pantalla en un celular, asi que
+  // un toque perdido no puede dejar al usuario sin prompt y sin segunda
+  // oportunidad: esto no escribe la preferencia y vuelve a salir la proxima vez.
+  const cerrarTemporal = useCallback(() => setAbierto(false), [])
+
+  // Descartar de verdad, con el boton. Ahi el usuario si dijo que no.
+  const descartar = useCallback(() => {
     localStorage.setItem(CLAVE, '1')
     setDescartada(true)
     setAbierto(false)
   }, [])
 
   // Con evento sin usar alcanza el boton. En las plataformas manuales la guia
-  // siempre esta disponible. Si el evento se gasto y no hay guia, ya no queda
-  // nada que ofrecer y el item del sidebar desaparece solo.
-  const instalable = !instalado && (Boolean(evento) || plataforma !== 'otro')
+  // siempre esta disponible. Si no hay ninguna de las dos vias, no hay nada que
+  // ofrecer y el item del sidebar desaparece solo.
+  const instalable = !instalado && (Boolean(evento) || Boolean(plataforma))
 
   return {
     abierto,
@@ -108,6 +89,7 @@ export default function useInstallPrompt() {
     descartada,
     abrir: () => setAbierto(true),
     instalar,
-    cerrar,
+    cerrarTemporal,
+    descartar,
   }
 }

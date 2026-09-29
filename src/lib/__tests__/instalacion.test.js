@@ -1,0 +1,256 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import {
+  CLAVE,
+  PASOS,
+  detectarPlataformaManual,
+  esIOS,
+  esSafariReal,
+  soportaEvento,
+  yaEstaInstalada,
+} from '../instalacion'
+
+// User agents reales, porque la deteccion es toda regex sobre el UA y los
+// valores inventados se pasan por alto los casos que importan.
+const UA = {
+  iOS_SAFARI:
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+  iOS_CHROME:
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/131.0.0.0 Mobile/15E148 Safari/604.1',
+  iOS_EDGE:
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) EdgiOS/131.0.0.0 Version/17.0 Mobile/15E148 Safari/605.1.15',
+  iOS_INSTAGRAM:
+    'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/21E198 Instagram 300.0.0.0 (iPhone13,2)',
+  // El iPad y el Mac comparten cadena: se diferencian por platform y maxTouchPoints.
+  MAC_SAFARI:
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+  IPAD_SAFARI:
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15',
+  MAC_CHROME:
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  MAC_EDGE:
+    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
+  ANDROID_CHROME:
+    'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36',
+  ANDROID_FIREFOX: 'Mozilla/5.0 (Android 14; Mobile; rv:130.0) Gecko/130.0 Firefox/130.0',
+  ANDROID_SAMSUNG:
+    'Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/27.0 Chrome/125.0.0.0 Mobile Safari/537.36',
+  ANDROID_INSTAGRAM:
+    'Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36 Instagram 300.0.0.0 Android',
+  LINUX_CHROME:
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  WINDOWS_CHROME:
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+  FIREFOX_DESKTOP: 'Mozilla/5.0 (X11; Linux x86_64; rv:130.0) Gecko/20100101 Firefox/130.0',
+}
+
+function definir(valor, prop) {
+  Object.defineProperty(navigator, prop, { value: valor, configurable: true })
+}
+
+const comoUserAgent = (ua) => {
+  definir(ua, 'userAgent')
+  definir(/Android/.test(ua) ? 'Linux armv8l' : 'MacIntel', 'platform')
+  definir(0, 'maxTouchPoints')
+}
+
+const comoIPad = () => {
+  definir(5, 'maxTouchPoints')
+}
+
+function mockMatchMedia(matches) {
+  vi.spyOn(window, 'matchMedia').mockReturnValue({
+    matches,
+    media: '',
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })
+}
+
+beforeEach(() => {
+  delete navigator.standalone
+  delete navigator.maxTouchPoints
+  definir('MacIntel', 'platform')
+  definir(0, 'maxTouchPoints')
+  comoUserAgent(UA.LINUX_CHROME)
+  mockMatchMedia(false)
+})
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
+
+describe('instalacion - esIOS', () => {
+  it('reconoce iPhone, iPad e iPod por el userAgent', () => {
+    comoUserAgent(UA.iOS_SAFARI)
+    expect(esIOS()).toBe(true)
+  })
+
+  it('reconoce el iPad, que se reporta como MacIntel y hay que separar por el táctil', () => {
+    comoUserAgent(UA.IPAD_SAFARI)
+    comoIPad()
+    expect(esIOS()).toBe(true)
+  })
+
+  it('no confunde un Mac de verdad con un iPad', () => {
+    comoUserAgent(UA.MAC_SAFARI)
+    expect(esIOS()).toBe(false)
+  })
+
+  it('da falso en Android y en escritorio', () => {
+    comoUserAgent(UA.ANDROID_CHROME)
+    expect(esIOS()).toBe(false)
+    comoUserAgent(UA.WINDOWS_CHROME)
+    expect(esIOS()).toBe(false)
+  })
+})
+
+describe('instalacion - esSafariReal', () => {
+  it('acepta Safari de iOS y de macOS', () => {
+    comoUserAgent(UA.iOS_SAFARI)
+    expect(esSafariReal()).toBe(true)
+    comoUserAgent(UA.MAC_SAFARI)
+    expect(esSafariReal()).toBe(true)
+  })
+
+  it('rechaza los navegadores de iOS que se anuncian con Safari en el UA', () => {
+    // Chrome, Edge y los in-app de iOS copian el token Safari del WebKit pero
+    // no instalan PWA, que es justo el caso que rompia la guia.
+    for (const ua of [UA.iOS_CHROME, UA.iOS_EDGE, UA.iOS_INSTAGRAM]) {
+      comoUserAgent(ua)
+      expect(esSafariReal()).toBe(false)
+    }
+  })
+
+  it('rechaza Chrome y Edge de escritorio', () => {
+    comoUserAgent(UA.MAC_CHROME)
+    expect(esSafariReal()).toBe(false)
+    comoUserAgent(UA.MAC_EDGE)
+    expect(esSafariReal()).toBe(false)
+  })
+
+  it('rechaza Firefox de Android, que no trae el token Safari', () => {
+    comoUserAgent(UA.ANDROID_FIREFOX)
+    expect(esSafariReal()).toBe(false)
+  })
+})
+
+describe('instalacion - soportaEvento', () => {
+  it('da true en Chromium de escritorio y de Android', () => {
+    for (const ua of [UA.LINUX_CHROME, UA.WINDOWS_CHROME, UA.MAC_CHROME, UA.MAC_EDGE, UA.ANDROID_CHROME, UA.ANDROID_SAMSUNG]) {
+      comoUserAgent(ua)
+      expect(soportaEvento()).toBe(true)
+    }
+  })
+
+  it('da false en Safari, que no implementa beforeinstallprompt', () => {
+    comoUserAgent(UA.MAC_SAFARI)
+    expect(soportaEvento()).toBe(false)
+  })
+
+  it('da false en iOS aunque el UA diga Chrome o Edge', () => {
+    // Los navegadores de iOS son WebKit bajo el capote: no disparan el evento
+    // ni instalan de otra forma, asi que no hay nada que escuchar.
+    for (const ua of [UA.iOS_SAFARI, UA.iOS_CHROME, UA.iOS_EDGE]) {
+      comoUserAgent(ua)
+      expect(soportaEvento()).toBe(false)
+    }
+  })
+
+  it('da false en Firefox de escritorio, que no instala', () => {
+    comoUserAgent(UA.FIREFOX_DESKTOP)
+    expect(soportaEvento()).toBe(false)
+  })
+})
+
+describe('instalacion - detectarPlataformaManual', () => {
+  it('ofrece la guia de iOS solo en Safari', () => {
+    comoUserAgent(UA.iOS_SAFARI)
+    expect(detectarPlataformaManual()).toBe('ios')
+    comoUserAgent(UA.iOS_CHROME)
+    expect(detectarPlataformaManual()).toBeNull()
+    comoUserAgent(UA.iOS_EDGE)
+    expect(detectarPlataformaManual()).toBeNull()
+  })
+
+  it('trata el iPad como iOS', () => {
+    comoUserAgent(UA.IPAD_SAFARI)
+    comoIPad()
+    expect(detectarPlataformaManual()).toBe('ios')
+  })
+
+  it('ofrece la guia de macOS solo en Safari', () => {
+    comoUserAgent(UA.MAC_SAFARI)
+    expect(detectarPlataformaManual()).toBe('mac')
+    comoUserAgent(UA.MAC_CHROME)
+    expect(detectarPlataformaManual()).toBeNull()
+    comoUserAgent(UA.MAC_EDGE)
+    expect(detectarPlataformaManual()).toBeNull()
+  })
+
+  it('ofrece la guia en los navegadores de Android que agregan a pantalla de inicio', () => {
+    for (const ua of [UA.ANDROID_CHROME, UA.ANDROID_FIREFOX, UA.ANDROID_SAMSUNG]) {
+      comoUserAgent(ua)
+      expect(detectarPlataformaManual()).toBe('android')
+    }
+  })
+
+  it('no ofrece nada dentro de un in-app browser de Android', () => {
+    comoUserAgent(UA.ANDROID_INSTAGRAM)
+    expect(detectarPlataformaManual()).toBeNull()
+  })
+
+  it('no ofrece nada en navegadores de escritorio sin via manual', () => {
+    for (const ua of [UA.LINUX_CHROME, UA.WINDOWS_CHROME, UA.FIREFOX_DESKTOP]) {
+      comoUserAgent(ua)
+      expect(detectarPlataformaManual()).toBeNull()
+    }
+  })
+})
+
+describe('instalacion - yaEstaInstalada', () => {
+  it('detecta standalone por display-mode', () => {
+    mockMatchMedia(true)
+    expect(yaEstaInstalada()).toBe(true)
+  })
+
+  it('detecta standalone por navigator.standalone, que es de WebKit', () => {
+    definir(true, 'standalone')
+    expect(yaEstaInstalada()).toBe(true)
+  })
+
+  it('da falso en una pestana normal', () => {
+    expect(yaEstaInstalada()).toBe(false)
+  })
+
+  it('no rompe si no hay matchMedia', () => {
+    definir(undefined, 'matchMedia')
+    expect(yaEstaInstalada()).toBe(false)
+  })
+})
+
+describe('instalacion - copy', () => {
+  it('usa la misma clave que el hook para la preferencia', () => {
+    expect(CLAVE).toBe('installDismissed')
+  })
+
+  it('tiene pasos numerados para las tres guias', () => {
+    for (const plataforma of ['ios', 'android', 'mac']) {
+      expect(PASOS[plataforma]).toHaveLength(2)
+      expect(PASOS[plataforma].map((p) => p.n)).toEqual([1, 2])
+    }
+  })
+
+  it('usa nombres de icono, no componentes, para no acoplar la lib a react-icons', () => {
+    const permitidos = ['compartir', 'tres-puntos', 'movil', 'menu', 'monitor']
+    for (const pasos of Object.values(PASOS)) {
+      for (const paso of pasos) {
+        expect(permitidos).toContain(paso.icono)
+        expect(typeof paso.texto).toBe('string')
+      }
+    }
+  })
+})

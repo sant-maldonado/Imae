@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import InstallNote from '../components/InstallNote'
+import useInstallPrompt from '../hooks/useInstallPrompt'
 
 export default function Login() {
   const { user, login, register, resetPassword } = useAuth()
@@ -11,6 +13,10 @@ export default function Login() {
   }, [user, navigate])
   const [esRegistro, setEsRegistro] = useState(false)
   const [esReset, setEsReset] = useState(false)
+  // Instancia propia del hook y no la de Layout: nunca coexisten, asi que no se
+  // pisan, y comparten la preferencia por localStorage. El aviso va inline y no
+  // con overlay porque el login es la pantalla que no hay que estorbar.
+  const prompt = useInstallPrompt()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [nombre, setNombre] = useState('')
@@ -162,6 +168,15 @@ export default function Login() {
             {esReset ? 'Volver al inicio' : esRegistro ? 'Ya tengo cuenta' : 'Crear cuenta nueva'}
           </button>
         </div>
+
+        {prompt.instalable && !prompt.descartada && (
+          <InstallNote
+            plataforma={prompt.plataforma}
+            evento={prompt.evento}
+            instalar={prompt.instalar}
+            descartar={prompt.descartar}
+          />
+        )}
       </div>
     </div>
   )

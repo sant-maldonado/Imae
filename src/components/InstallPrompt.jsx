@@ -1,24 +1,18 @@
 import { useEffect, useRef } from 'react'
 import { FiDownload, FiMenu, FiMonitor, FiMoreVertical, FiShare2, FiSmartphone, FiX } from 'react-icons/fi'
+import { PASOS } from '../lib/instalacion'
 
-// Los nombres de los items de menu cambian por idioma, asi que cada paso
-// describe donde mirarlo ademas de citar la etiqueta.
-const PASOS = {
-  ios: [
-    { n: 1, icono: FiShare2, texto: 'Tocá Compartir' },
-    { n: 2, icono: FiSmartphone, texto: 'Elegí Agregar a pantalla de inicio' },
-  ],
-  android: [
-    { n: 1, icono: FiMoreVertical, texto: 'Abrí el menú del navegador' },
-    { n: 2, icono: FiSmartphone, texto: 'Elegí Agregar a pantalla de inicio' },
-  ],
-  mac: [
-    { n: 1, icono: FiMenu, texto: 'Menú Archivo, arriba a la izquierda' },
-    { n: 2, icono: FiMonitor, texto: 'Agregar al Dock' },
-  ],
+// La lib guarda los nombres de los iconos y no los componentes, para no
+// atarla a react-icons y poder testearla sin renderizar nada.
+const ICONOS = {
+  compartir: FiShare2,
+  'tres-puntos': FiMoreVertical,
+  movil: FiSmartphone,
+  menu: FiMenu,
+  monitor: FiMonitor,
 }
 
-export default function InstallPrompt({ abierto, plataforma, evento, instalar, cerrar }) {
+export default function InstallPrompt({ abierto, plataforma, evento, instalar, cerrarTemporal, descartar }) {
   const panel = useRef(null)
 
   useEffect(() => {
@@ -28,14 +22,14 @@ export default function InstallPrompt({ abierto, plataforma, evento, instalar, c
     const previo = document.activeElement
     panel.current?.focus()
     const alEscape = (e) => {
-      if (e.key === 'Escape') cerrar()
+      if (e.key === 'Escape') cerrarTemporal()
     }
     document.addEventListener('keydown', alEscape)
     return () => {
       document.removeEventListener('keydown', alEscape)
       if (previo instanceof HTMLElement) previo.focus()
     }
-  }, [abierto, cerrar])
+  }, [abierto, cerrarTemporal])
 
   if (!abierto) return null
 
@@ -44,7 +38,7 @@ export default function InstallPrompt({ abierto, plataforma, evento, instalar, c
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
-      onClick={cerrar}
+      onClick={cerrarTemporal}
     >
       <div
         ref={panel}
@@ -71,8 +65,9 @@ export default function InstallPrompt({ abierto, plataforma, evento, instalar, c
             </p>
           </div>
           <button
-            onClick={cerrar}
-            aria-label="Cerrar"
+            onClick={descartar}
+            aria-label="No mostrar de nuevo"
+            title="No mostrar de nuevo"
             className="-mr-1 -mt-1 shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-200"
           >
             <FiX className="h-5 w-5" />
@@ -81,18 +76,21 @@ export default function InstallPrompt({ abierto, plataforma, evento, instalar, c
 
         {pasos.length > 0 && (
           <ol className="mt-4 space-y-2">
-            {pasos.map((paso) => (
-              <li
-                key={paso.n}
-                className="flex items-center gap-3 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-700/50"
-              >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
-                  {paso.n}
-                </span>
-                <paso.icono className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-300" />
-                <span className="text-sm text-slate-700 dark:text-slate-200">{paso.texto}</span>
-              </li>
-            ))}
+            {pasos.map((paso) => {
+              const Icono = ICONOS[paso.icono]
+              return (
+                <li
+                  key={paso.n}
+                  className="flex items-center gap-3 rounded-lg bg-slate-50 p-2.5 dark:bg-slate-700/50"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
+                    {paso.n}
+                  </span>
+                  {Icono && <Icono className="h-4 w-4 shrink-0 text-slate-500 dark:text-slate-300" />}
+                  <span className="text-sm text-slate-700 dark:text-slate-200">{paso.texto}</span>
+                </li>
+              )
+            })}
           </ol>
         )}
 
@@ -107,7 +105,7 @@ export default function InstallPrompt({ abierto, plataforma, evento, instalar, c
             </button>
           ) : (
             <button
-              onClick={cerrar}
+              onClick={descartar}
               className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
             >
               Entendido

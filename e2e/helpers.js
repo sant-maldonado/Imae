@@ -78,10 +78,13 @@ async function loginCon(page, email, password) {
 }
 
 // El prompt de instalacion no molesta a estos specs por construccion, no por
-// suerte: solo se abre solo en iOS/macOS/Android o cuando Chrome dispara
-// beforeinstallprompt, y aca el userAgent es el de Chromium de escritorio
-// corriendo contra el dev server, donde el manifest ni se genera porque
-// devOptions esta en false. Si alguna vez se emula un movil en
-// playwright.config.js, el overlay z-50 va a interceptar los clicks y hay que
-// empezar a marcar installDismissed antes de cargar.
+// suerte: solo se ofrece donde el navegador puede instalar de verdad (Safari en
+// iOS/macOS, los de Android, o cuando Chromium dispara beforeinstallprompt), y
+// aca el userAgent es el de Chromium de escritorio corriendo contra el dev
+// server, donde el manifest ni se genera porque devOptions esta en false.
+//
+// El aviso del login es inline, no overlay, asi que ni siquiera emulando un
+// movil rompe el formulario. Lo unico que si habria que marcar antes de cargar
+// es installDismissed, porque el overlay del area autenticada va con z-50 y
+// captura los clicks.
 export const CLAVE_PROMPT = 'installDismissed'

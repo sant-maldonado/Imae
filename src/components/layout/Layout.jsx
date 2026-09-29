@@ -52,7 +52,8 @@ export default function Layout() {
         plataforma={prompt.plataforma}
         evento={prompt.evento}
         instalar={prompt.instalar}
-        cerrar={prompt.cerrar}
+        cerrarTemporal={prompt.cerrarTemporal}
+        descartar={prompt.descartar}
       />
     </div>
   )

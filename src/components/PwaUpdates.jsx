@@ -28,9 +28,10 @@ export default function PwaUpdates() {
             if (ok) updateSW(true)
           })
       },
-      onOfflineReady() {
-        toastRef.current?.success('IMAE quedó listo para usar sin conexión.')
-      },
+      // Nada de onOfflineReady a proposito: solo se cachea el shell, y con sesion
+      // abierta AuthContext termina redirigiendo al login ante cualquier fallo de
+      // red. Avisar que IMAE "quedo listo para usar sin conexion" era falso y hay
+      // que arreglar el logout por red antes de volver a prometerlo.
     })
   }, [])
 
