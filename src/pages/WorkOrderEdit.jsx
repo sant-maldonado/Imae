@@ -6,7 +6,7 @@ import { SkeletonCard } from '../components/Skeleton'
 import { HiOutlineArrowLeft } from 'react-icons/hi2'
 import { useAuth } from '../context/AuthContext'
 
-const CAMPO = 'w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'
+const CAMPO = 'w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'
 const LABEL = 'block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1'
 
 // El estado se inicializa desde la orden una sola vez: si el padre volviera a

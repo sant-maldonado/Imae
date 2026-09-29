@@ -24,7 +24,7 @@ export default function Technicians() {
         placeholder="Buscar por nombre..."
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 w-full sm:w-auto mb-4"
+        className="text-base border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 w-full sm:w-auto mb-4"
       />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filtrados.length === 0 ? (

@@ -34,9 +34,9 @@ export default function InstallNote({ plataforma, evento, instalar, descartar })
           onClick={descartar}
           aria-label="No mostrar de nuevo"
           title="No mostrar de nuevo"
-          className="-mr-1 -mt-1 shrink-0 rounded-lg p-1 text-slate-500 transition-colors hover:bg-slate-700 hover:text-slate-200"
+          className="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-700 hover:text-slate-200"
         >
-          <FiX className="h-4 w-4" />
+          <FiX className="h-5 w-5" />
         </button>
       </div>
 

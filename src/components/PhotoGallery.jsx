@@ -66,7 +66,7 @@ export default function PhotoGallery({ ordenId }) {
             placeholder="Descripción (opcional)"
             value={descripcion}
             onChange={(e) => setDescripcion(e.target.value)}
-            className="text-xs border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+            className="text-base border border-slate-300 dark:border-slate-600 rounded-lg px-2 py-1.5 w-40 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
           />
           <input
             ref={fileRef}

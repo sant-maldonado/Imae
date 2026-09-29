@@ -95,7 +95,7 @@ export default function WorkOrderForm() {
               required
               value={form.titulo}
               onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
             />
           </div>
 
@@ -106,7 +106,7 @@ export default function WorkOrderForm() {
               rows={3}
               value={form.descripcion}
               onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
             />
           </div>
 
@@ -117,7 +117,7 @@ export default function WorkOrderForm() {
                 id="orden-equipo"
                 value={form.equipoId}
                 onChange={(e) => setForm({ ...form, equipoId: e.target.value })}
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
               >
                 <option value="">Ninguno</option>
                 {equipos?.map((eq) => (
@@ -170,7 +170,7 @@ export default function WorkOrderForm() {
                 id="orden-prioridad"
                 value={form.prioridad}
                 onChange={(e) => setForm({ ...form, prioridad: e.target.value })}
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
               >
                 <option value="baja">Baja</option>
                 <option value="media">Media</option>
@@ -184,7 +184,7 @@ export default function WorkOrderForm() {
                 id="orden-tipo"
                 value={form.tipoMantenimiento}
                 onChange={(e) => setForm({ ...form, tipoMantenimiento: e.target.value })}
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
               >
                 <option value="preventivo">Preventivo</option>
                 <option value="correctivo">Correctivo</option>
@@ -199,7 +199,7 @@ export default function WorkOrderForm() {
                 required
                 value={form.fechaProgramada}
                 onChange={(e) => setForm({ ...form, fechaProgramada: e.target.value })}
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
               />
             </div>
           </div>

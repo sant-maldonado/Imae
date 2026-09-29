@@ -77,12 +77,12 @@ export default function WorkOrders() {
             placeholder="Buscar por título..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 w-full sm:w-48"
+            className="text-base border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 w-full sm:w-48"
           />
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
-            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+            className="text-base border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
           >
             <option value="">Todos los estados</option>
             {Object.entries(estados).map(([k, v]) => (
@@ -92,7 +92,7 @@ export default function WorkOrders() {
           <select
             value={filtroPrioridad}
             onChange={(e) => setFiltroPrioridad(e.target.value)}
-            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+            className="text-base border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
           >
             <option value="">Todas las prioridades</option>
             {Object.entries(prioridades).map(([k, v]) => (
@@ -102,7 +102,7 @@ export default function WorkOrders() {
           <select
             value={filtroTecnico}
             onChange={(e) => setFiltroTecnico(e.target.value)}
-            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+            className="text-base border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
           >
             <option value="">Todos los técnicos</option>
             {tecnicos?.filter((t) => t.activo).map((t) => (

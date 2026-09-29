@@ -60,12 +60,12 @@ export default function Purchases() {
             placeholder="Buscar por artículo..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 w-full sm:w-48"
+            className="text-base border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 w-full sm:w-48"
           />
           <select
             value={filtroEstado}
             onChange={(e) => setFiltroEstado(e.target.value)}
-            className="text-sm border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+            className="text-base border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
           >
             <option value="">Todos los estados</option>
             {Object.entries(estadosCompra).map(([k, v]) => (

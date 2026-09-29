@@ -160,7 +160,7 @@ export default function Profile() {
                 required
                 value={currentPass}
                 onChange={(e) => setCurrentPass(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -171,7 +171,7 @@ export default function Profile() {
                 minLength={6}
                 value={newPass}
                 onChange={(e) => setNewPass(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
             <div>
@@ -182,7 +182,7 @@ export default function Profile() {
                 minLength={6}
                 value={confirmPass}
                 onChange={(e) => setConfirmPass(e.target.value)}
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 

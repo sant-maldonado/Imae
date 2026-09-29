@@ -50,7 +50,7 @@ export default function PurchaseForm() {
               required
               value={form.proveedor}
               onChange={(e) => setForm({ ...form, proveedor: e.target.value })}
-              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
               placeholder="Nombre del proveedor"
             />
           </div>
@@ -62,7 +62,7 @@ export default function PurchaseForm() {
               required
               value={form.articulo}
               onChange={(e) => setForm({ ...form, articulo: e.target.value })}
-              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
               placeholder="Descripción del artículo"
             />
           </div>
@@ -77,7 +77,7 @@ export default function PurchaseForm() {
                 min="1"
                 value={form.cantidad}
                 onChange={(e) => setForm({ ...form, cantidad: e.target.value })}
-              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
             />
           </div>
           <div>
@@ -86,7 +86,7 @@ export default function PurchaseForm() {
                 id="compra-unidad"
                 value={form.unidad}
                 onChange={(e) => setForm({ ...form, unidad: e.target.value })}
-                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+                className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
               >
                 <option value="unidades">Unidades</option>
                 <option value="litros">Litros</option>
@@ -104,7 +104,7 @@ export default function PurchaseForm() {
               id="compra-orden"
               value={form.ordenId}
               onChange={(e) => setForm({ ...form, ordenId: e.target.value })}
-              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
             >
               <option value="">Sin vincular</option>
               {ordenes?.map((o) => (
@@ -123,7 +123,7 @@ export default function PurchaseForm() {
               type="date"
               value={form.fechaEntrega}
               onChange={(e) => setForm({ ...form, fechaEntrega: e.target.value })}
-              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
+              className="w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200"
             />
           </div>
 

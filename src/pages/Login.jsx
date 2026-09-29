@@ -78,7 +78,7 @@ export default function Login() {
                   required
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-base text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Tu nombre"
                 />
               </div>
@@ -88,7 +88,7 @@ export default function Login() {
                   required
                   value={especialidad}
                   onChange={(e) => setEspecialidad(e.target.value)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-base text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="" disabled>Seleccionar especialidad</option>
                   <option value="Mecánica">Mecánica</option>
@@ -105,7 +105,7 @@ export default function Login() {
                 <input
                   value={telefono}
                   onChange={(e) => setTelefono(e.target.value)}
-                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-base text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="+54 11 5555-5555"
                 />
               </div>
@@ -118,7 +118,7 @@ export default function Login() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-base text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="email@ejemplo.com"
             />
           </div>
@@ -131,7 +131,7 @@ export default function Login() {
                 minLength={6}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2.5 text-base text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="••••••"
               />
             </div>

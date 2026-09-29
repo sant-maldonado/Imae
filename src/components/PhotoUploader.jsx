@@ -60,7 +60,7 @@ export default function PhotoUploader({ setFotos }) {
                 placeholder="Descripción opcional"
                 value={foto.descripcion}
                 onChange={(e) => setDescripcion(i, e.target.value)}
-                className="w-full text-[11px] px-2 py-1 border-t border-slate-200 focus:outline-none"
+                className="w-full text-base px-2 py-1 border-t border-slate-200 focus:outline-none"
               />
               <button
                 type="button"
