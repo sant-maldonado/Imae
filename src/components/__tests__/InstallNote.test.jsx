@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import InstallNote from '../InstallNote'
@@ -70,5 +70,35 @@ describe('InstallNote', () => {
     renderizar({ descartar })
     await userEvent.click(screen.getByRole('button', { name: 'No mostrar de nuevo' }))
     expect(descartar).toHaveBeenCalledTimes(1)
+  })
+})
+
+// La nota del login es la que ve el que abre el link desde WhatsApp sin sesion.
+// Adentro de la WebView no hay instalar, asi que la nota tiene que empujar a
+// Chrome en vez de listar un menu que no existe.
+describe('InstallNote en un in-app browser', () => {
+  const original = navigator.userAgent
+  const UA_WEBVIEW =
+    'Mozilla/5.0 (Linux; Android 14; SM-S911B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.0.0 Mobile Safari/537.36'
+
+  beforeEach(() => {
+    Object.defineProperty(navigator, 'userAgent', { value: UA_WEBVIEW, configurable: true })
+  })
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'userAgent', { value: original, configurable: true })
+  })
+
+  it('cambia el titulo y lista los pasos de salir a Chrome', () => {
+    renderizar({ plataforma: 'in-app' })
+    expect(screen.getByText('Abrí IMAE en Chrome para instalarla')).toBeInTheDocument()
+    expect(screen.getByText('Tocá ⋮, arriba a la derecha')).toBeInTheDocument()
+    expect(screen.getByText('Elegí Abrir en Chrome')).toBeInTheDocument()
+  })
+
+  it('agrega el enlace a Chrome, que es la accion real de la nota', () => {
+    renderizar({ plataforma: 'in-app' })
+    const enlace = screen.getByRole('link', { name: 'Abrir en Chrome' })
+    expect(enlace).toHaveAttribute('href', expect.stringContaining('package=com.android.chrome'))
   })
 })

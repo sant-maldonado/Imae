@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import InstallPrompt from '../InstallPrompt'
@@ -148,5 +148,41 @@ describe('InstallPrompt', () => {
     renderizar({ cerrarTemporal })
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'a' }))
     expect(cerrarTemporal).not.toHaveBeenCalled()
+  })
+})
+
+// Adentro de la WebView de WhatsApp no hay instalar. El cartel tiene que
+// empujar a Chrome en vez de ofrecer un menu que no existe.
+describe('InstallPrompt en un in-app browser', () => {
+  const original = navigator.userAgent
+  const UA_WEBVIEW =
+    'Mozilla/5.0 (Linux; Android 14; SM-S911B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.0.0 Mobile Safari/537.36'
+
+  beforeEach(() => {
+    Object.defineProperty(navigator, 'userAgent', { value: UA_WEBVIEW, configurable: true })
+  })
+
+  afterEach(() => {
+    Object.defineProperty(navigator, 'userAgent', { value: original, configurable: true })
+  })
+
+  it('cambia el titulo, porque el de instalar no describe el paso que sigue', () => {
+    renderizar({ plataforma: 'in-app' })
+    expect(screen.getByText('Abrí IMAE en Chrome para instalarla')).toBeInTheDocument()
+    expect(screen.queryByText('Instala IMAE como app')).not.toBeInTheDocument()
+  })
+
+  it('guia con los pasos de salir a Chrome', () => {
+    renderizar({ plataforma: 'in-app' })
+    expect(screen.getByText('Tocá ⋮, arriba a la derecha')).toBeInTheDocument()
+    expect(screen.getByText('Elegí Abrir en Chrome')).toBeInTheDocument()
+  })
+
+  it('ofrece el enlace a Chrome en vez del boton Entendido', () => {
+    renderizar({ plataforma: 'in-app' })
+    const enlace = screen.getByRole('link', { name: 'Abrir en Chrome' })
+    expect(enlace).toHaveAttribute('href', expect.stringContaining('package=com.android.chrome'))
+    // Un enlace, no un boton que descarte: irse a instalar no es decir que no.
+    expect(screen.queryByRole('button', { name: 'Entendido' })).not.toBeInTheDocument()
   })
 })

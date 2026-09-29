@@ -19,6 +19,9 @@ const UA_IOS_CHROME =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/131.0.0.0 Mobile/15E148 Safari/604.1'
 const UA_MAC_CHROME =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+// WebView de app en Android: lo delata el token ;wv), no el nombre de la app.
+const UA_ANDROID_WEBVIEW =
+  'Mozilla/5.0 (Linux; Android 14; SM-S911B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.0.0 Mobile Safari/537.36'
 
 function definir(valor, prop) {
   Object.defineProperty(navigator, prop, { value: valor, configurable: true })
@@ -389,5 +392,43 @@ describe('useInstallPrompt - instalar y descartar', () => {
 
     expect(quitar).toHaveBeenCalledWith('beforeinstallprompt', expect.any(Function))
     expect(quitar).toHaveBeenCalledWith('appinstalled', expect.any(Function))
+  })
+})
+
+describe('useInstallPrompt - in-app', () => {
+  it('detecta la WebView y ofrece el cartel para salir a Chrome', () => {
+    definirUserAgent(UA_ANDROID_WEBVIEW)
+    const { result } = renderHook(() => useInstallPrompt())
+    expect(result.current.plataforma).toBe('in-app')
+    expect(result.current.hayGuia).toBe(true)
+  })
+
+  // El item del sidebar dice "Agregar a la pantalla", que adentro de la WebView
+  // no agrega nada: por eso hay cartel pero no item.
+  it('no expone el item del sidebar, que ahi no puede cumplir', () => {
+    definirUserAgent(UA_ANDROID_WEBVIEW)
+    const { result } = renderHook(() => useInstallPrompt())
+    expect(result.current.instalable).toBe(false)
+  })
+
+  it('abre el cartel solo despues del retardo', () => {
+    vi.useFakeTimers()
+    definirUserAgent(UA_ANDROID_WEBVIEW)
+    const { result } = renderHook(() => useInstallPrompt())
+    expect(result.current.abierto).toBe(false)
+
+    act(() => {
+      vi.advanceTimersByTime(1000)
+    })
+    expect(result.current.abierto).toBe(true)
+  })
+
+  it('el descarte sigue valiendo tambien en in-app', () => {
+    definirUserAgent(UA_ANDROID_WEBVIEW)
+    const { result } = renderHook(() => useInstallPrompt())
+
+    act(() => result.current.descartar())
+    expect(result.current.descartada).toBe(true)
+    expect(guardado()).toBeGreaterThan(EPOCH_MINIMO)
   })
 })

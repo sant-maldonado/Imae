@@ -1,5 +1,5 @@
-import { FiDownload, FiMenu, FiMonitor, FiMoreVertical, FiShare2, FiSmartphone, FiX } from 'react-icons/fi'
-import { PASOS } from '../lib/instalacion'
+import { FiDownload, FiExternalLink, FiMenu, FiMonitor, FiMoreVertical, FiShare2, FiSmartphone, FiX } from 'react-icons/fi'
+import { PASOS, TITULOS, TITULO_POR_DEFECTO, urlAbrirEnChrome } from '../lib/instalacion'
 
 const ICONOS = {
   compartir: FiShare2,
@@ -7,6 +7,7 @@ const ICONOS = {
   movil: FiSmartphone,
   menu: FiMenu,
   monitor: FiMonitor,
+  externo: FiExternalLink,
 }
 
 // Variante pasiva del aviso de instalacion, para la pantalla de login. No es un
@@ -19,6 +20,7 @@ const ICONOS = {
 // donde el usuario puede decir que no sin entrar a la app.
 export default function InstallNote({ plataforma, evento, instalar, descartar }) {
   const pasos = PASOS[plataforma] ?? []
+  const urlChrome = plataforma === 'in-app' ? urlAbrirEnChrome() : null
 
   return (
     <section
@@ -28,7 +30,7 @@ export default function InstallNote({ plataforma, evento, instalar, descartar })
       <div className="flex items-start gap-2.5">
         <img src="/icons/icon-192.png" alt="" className="h-9 w-9 shrink-0 rounded-lg" />
         <p className="min-w-0 flex-1 text-sm font-semibold text-slate-100">
-          Instala IMAE como app
+          {TITULOS[plataforma] ?? TITULO_POR_DEFECTO}
         </p>
         <button
           onClick={descartar}
@@ -49,22 +51,34 @@ export default function InstallNote({ plataforma, evento, instalar, descartar })
           Instalar
         </button>
       ) : (
-        pasos.length > 0 && (
-          <ol className="mt-3 space-y-1.5">
-            {pasos.map((paso) => {
-              const Icono = ICONOS[paso.icono]
-              return (
-                <li key={paso.n} className="flex items-center gap-2 text-xs text-slate-300">
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-700 text-[10px] font-semibold text-slate-200">
-                    {paso.n}
-                  </span>
-                  {Icono && <Icono className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
-                  <span>{paso.texto}</span>
-                </li>
-              )
-            })}
-          </ol>
-        )
+        <>
+          {pasos.length > 0 && (
+            <ol className="mt-3 space-y-1.5">
+              {pasos.map((paso) => {
+                const Icono = ICONOS[paso.icono]
+                return (
+                  <li key={paso.n} className="flex items-center gap-2 text-xs text-slate-300">
+                    <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-700 text-[10px] font-semibold text-slate-200">
+                      {paso.n}
+                    </span>
+                    {Icono && <Icono className="h-3.5 w-3.5 shrink-0 text-slate-500" />}
+                    <span>{paso.texto}</span>
+                  </li>
+                )
+              })}
+            </ol>
+          )}
+          {urlChrome && (
+            // No descarta: irse a instalar no es decir que no.
+            <a
+              href={urlChrome}
+              className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              <FiExternalLink className="h-3.5 w-3.5" />
+              Abrir en Chrome
+            </a>
+          )}
+        </>
       )}
     </section>
   )

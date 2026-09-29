@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { FiDownload, FiMenu, FiMonitor, FiMoreVertical, FiShare2, FiSmartphone, FiX } from 'react-icons/fi'
-import { PASOS } from '../lib/instalacion'
+import { FiDownload, FiExternalLink, FiMenu, FiMonitor, FiMoreVertical, FiShare2, FiSmartphone, FiX } from 'react-icons/fi'
+import { PASOS, TITULOS, TITULO_POR_DEFECTO, urlAbrirEnChrome } from '../lib/instalacion'
 
 // La lib guarda los nombres de los iconos y no los componentes, para no
 // atarla a react-icons y poder testearla sin renderizar nada.
@@ -10,6 +10,7 @@ const ICONOS = {
   movil: FiSmartphone,
   menu: FiMenu,
   monitor: FiMonitor,
+  externo: FiExternalLink,
 }
 
 export default function InstallPrompt({ abierto, plataforma, evento, instalar, cerrarTemporal, descartar }) {
@@ -34,6 +35,7 @@ export default function InstallPrompt({ abierto, plataforma, evento, instalar, c
   if (!abierto) return null
 
   const pasos = PASOS[plataforma] ?? []
+  const urlChrome = plataforma === 'in-app' ? urlAbrirEnChrome() : null
 
   return (
     <div
@@ -58,7 +60,7 @@ export default function InstallPrompt({ abierto, plataforma, evento, instalar, c
               id="titulo-instalar"
               className="text-base font-semibold text-slate-900 dark:text-slate-100"
             >
-              Instala IMAE como app
+              {TITULOS[plataforma] ?? TITULO_POR_DEFECTO}
             </p>
           </div>
           <button
@@ -100,6 +102,16 @@ export default function InstallPrompt({ abierto, plataforma, evento, instalar, c
               <FiDownload className="h-4 w-4" />
               Instalar
             </button>
+          ) : urlChrome ? (
+            // No descarta: irse a instalar no es decir que no. Si quemara el
+            // descarte, el que sigue la guia se quedaria sin cartel alla.
+            <a
+              href={urlChrome}
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+            >
+              <FiExternalLink className="h-4 w-4" />
+              Abrir en Chrome
+            </a>
           ) : (
             <button
               onClick={descartar}

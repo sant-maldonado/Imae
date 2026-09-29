@@ -169,7 +169,7 @@ export default function Login() {
           </button>
         </div>
 
-        {prompt.instalable && !prompt.descartada && (
+        {prompt.hayGuia && !prompt.descartada && (
           <InstallNote
             plataforma={prompt.plataforma}
             evento={prompt.evento}

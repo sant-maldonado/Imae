@@ -85,12 +85,17 @@ export default function useInstallPrompt() {
   // Con evento sin usar alcanza el boton. En las plataformas manuales la guia
   // siempre esta disponible. Si no hay ninguna de las dos vias, no hay nada que
   // ofrecer y el item del sidebar desaparece solo.
-  const instalable = !instalado && (Boolean(evento) || Boolean(plataforma))
+  const hayGuia = !instalado && (Boolean(evento) || Boolean(plataforma))
+
+  // En un in-app hay cartel, porque hay que sacar al usuario de la WebView, pero
+  // no item en el sidebar: "Agregar a la pantalla" ahi no agrega nada.
+  const instalable = hayGuia && plataforma !== 'in-app'
 
   return {
     abierto,
     plataforma,
     evento,
+    hayGuia,
     instalable,
     instalado,
     descartada,

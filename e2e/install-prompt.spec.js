@@ -8,6 +8,10 @@ const UA_IPHONE =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 const UA_CHROME_DESKTOP =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
+// WebView de app en Android. Lo delata el token ;wv), que es lo que manda
+// WhatsApp cuando abre un link adentro.
+const UA_ANDROID_WEBVIEW =
+  'Mozilla/5.0 (Linux; Android 14; SM-S911B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.0.0 Mobile Safari/537.36'
 
 const nota = (page) => page.getByRole('region', { name: 'Instalar IMAE' })
 
@@ -138,5 +142,33 @@ test.describe('prompt de instalacion en escritorio', () => {
     await expect(nota).toBeVisible()
     await expect(nota.getByText('Instala IMAE como app')).toBeVisible()
     await expect(nota.getByText('Elegí Instalar página como app')).toBeVisible()
+  })
+})
+
+// El link suele llegar por WhatsApp, que lo abre en su WebView. Ahi no hay
+// instalar: el cartel tiene que empujar a Chrome en vez de listar un menu que no
+// existe, y no puede prometer el item del sidebar, que tampoco puede cumplir.
+test.describe('prompt de instalacion en una WebView de app', () => {
+  test.use({ userAgent: UA_ANDROID_WEBVIEW })
+
+  test('en el login ofrece salir a Chrome, no instalar', async ({ page }) => {
+    await page.goto('/login')
+
+    const nota = page.getByRole('region', { name: 'Instalar IMAE' })
+    await expect(nota).toBeVisible()
+    await expect(nota.getByText('Abrí IMAE en Chrome para instalarla')).toBeVisible()
+    await expect(nota.getByText('Elegí Abrir en Chrome')).toBeVisible()
+    await expect(nota.getByRole('link', { name: 'Abrir en Chrome' })).toBeVisible()
+  })
+
+  test('logueado muestra el cartel pero no el item de agregar del sidebar', async ({ page }) => {
+    await login(page)
+
+    const sheet = page.getByRole('dialog')
+    await expect(sheet).toBeVisible({ timeout: 10_000 })
+    await expect(sheet.getByText('Abrí IMAE en Chrome para instalarla')).toBeVisible()
+    await expect(sheet.getByRole('link', { name: 'Abrir en Chrome' })).toBeVisible()
+
+    await expect(page.getByText('Agregar a la pantalla')).toHaveCount(0)
   })
 })

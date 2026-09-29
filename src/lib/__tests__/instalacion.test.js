@@ -9,6 +9,7 @@ import {
   esSafariReal,
   marcarDescartada,
   soportaEvento,
+  urlAbrirEnChrome,
   yaEstaInstalada,
 } from '../instalacion'
 
@@ -39,6 +40,10 @@ const UA = {
     'Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/27.0 Chrome/125.0.0.0 Mobile Safari/537.36',
   ANDROID_INSTAGRAM:
     'Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36 Instagram 300.0.0.0 Android',
+  // WebView pura, sin nombre de app en el UA. Es la que no cubre la lista de
+  // nombres y por eso se detecta por el token ;wv).
+  ANDROID_WEBVIEW:
+    'Mozilla/5.0 (Linux; Android 14; SM-S911B Build/UP1A.231005.007; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/119.0.0.0 Mobile Safari/537.36',
   LINUX_CHROME:
     'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
   WINDOWS_CHROME:
@@ -208,9 +213,14 @@ describe('instalacion - detectarPlataformaManual', () => {
     }
   })
 
-  it('no ofrece nada dentro de un in-app browser de Android', () => {
+  it('manda a salir a Chrome dentro de un in-app browser de Android', () => {
     comoUserAgent(UA.ANDROID_INSTAGRAM)
-    expect(detectarPlataformaManual()).toBeNull()
+    expect(detectarPlataformaManual()).toBe('in-app')
+  })
+
+  it('reconoce la WebView por el token ;wv), aunque el UA no diga de que app es', () => {
+    comoUserAgent(UA.ANDROID_WEBVIEW)
+    expect(detectarPlataformaManual()).toBe('in-app')
   })
 
   it('no ofrece nada en Firefox de escritorio, que no puede instalar PWA', () => {
@@ -218,11 +228,30 @@ describe('instalacion - detectarPlataformaManual', () => {
     expect(detectarPlataformaManual()).toBeNull()
   })
 
-  it('tampoco ofrece nada en un in-app browser de escritorio', () => {
+  it('tambien manda a salir a Chrome en un in-app browser de escritorio', () => {
     // El UA se miente y dice Chrome, asi que sin el filtro de in-app se le
-    // prometeria un menu que la WebView no tiene.
+    // prometeria el menu de instalacion de Chrome, que la WebView no tiene.
     comoUserAgent(UA.LINUX_CHROME.replace('Chrome', 'Chrome FBAN'))
-    expect(detectarPlataformaManual()).toBeNull()
+    expect(detectarPlataformaManual()).toBe('in-app')
+  })
+})
+
+describe('instalacion - urlAbrirEnChrome', () => {
+  it('arma un intent:// que apunta al paquete de Chrome en Android', () => {
+    comoUserAgent(UA.ANDROID_WEBVIEW)
+    const url = urlAbrirEnChrome()
+    expect(url).toMatch(/^intent:\/\//)
+    expect(url).toContain('package=com.android.chrome')
+    expect(url).toContain('#Intent;scheme=http;')
+    expect(url).toContain('S.browser_fallback_url=')
+    expect(url.endsWith(';end')).toBe(true)
+  })
+
+  it('da null fuera de Android, donde intent:// no existe', () => {
+    comoUserAgent(UA.LINUX_CHROME)
+    expect(urlAbrirEnChrome()).toBeNull()
+    comoUserAgent(UA.iOS_SAFARI)
+    expect(urlAbrirEnChrome()).toBeNull()
   })
 })
 
@@ -252,15 +281,15 @@ describe('instalacion - copy', () => {
     expect(CLAVE).toBe('installDismissed')
   })
 
-  it('tiene pasos numerados para las cuatro guias', () => {
-    for (const plataforma of ['ios', 'android', 'mac', 'desktop']) {
+  it('tiene pasos numerados para todas las guias', () => {
+    for (const plataforma of ['ios', 'android', 'in-app', 'mac', 'desktop']) {
       expect(PASOS[plataforma]).toHaveLength(2)
       expect(PASOS[plataforma].map((p) => p.n)).toEqual([1, 2])
     }
   })
 
   it('usa nombres de icono, no componentes, para no acoplar la lib a react-icons', () => {
-    const permitidos = ['compartir', 'tres-puntos', 'movil', 'menu', 'monitor']
+    const permitidos = ['compartir', 'tres-puntos', 'movil', 'menu', 'monitor', 'externo']
     for (const pasos of Object.values(PASOS)) {
       for (const paso of pasos) {
         expect(permitidos).toContain(paso.icono)
