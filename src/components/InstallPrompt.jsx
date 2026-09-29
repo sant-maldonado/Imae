@@ -73,7 +73,11 @@ export default function InstallPrompt({ abierto, plataforma, evento, instalar, c
           </button>
         </div>
 
-        {pasos.length > 0 && (
+        {/* Con evento de Chromium ya hay boton de verdad, y dejar la guia pegada al
+            lado confunde: son dos caminos para lo mismo. Ademas el boton de abajo
+            cambia de "Entendido" a "Instalar" en el mismo lugar, y en un telefono
+            el que iba a descartar termina instalando. */}
+        {pasos.length > 0 && !evento && (
           <ol className="mt-4 space-y-2">
             {pasos.map((paso) => {
               const Icono = ICONOS[paso.icono]

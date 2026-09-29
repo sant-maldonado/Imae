@@ -82,10 +82,19 @@ describe('InstallPrompt', () => {
     })
   })
 
+  // El `plataforma` importa: sin el, `PASOS[undefined]` es undefined, la lista
+  // nunca se dibuja y el `queryByRole` da null sin comprobar nada. Esta combinacion
+  // es la real en Android, donde conviven la guia y el evento.
   it('con evento de Chromium ofrece el boton Instalar y ningun paso', () => {
-    renderizar({ evento: { prompt: vi.fn() } })
+    renderizar({ plataforma: 'android', evento: { prompt: vi.fn() } })
     expect(screen.getByRole('button', { name: 'Instalar' })).toBeInTheDocument()
     expect(screen.queryByRole('list')).not.toBeInTheDocument()
+  })
+
+  it('sin evento en Android mantiene la guia, que es el plan B', () => {
+    renderizar({ plataforma: 'android' })
+    expect(screen.getByRole('list')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Entendido' })).toBeInTheDocument()
   })
 
   it('sin evento ofrece Entendido', () => {
