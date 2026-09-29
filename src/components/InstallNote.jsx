@@ -35,7 +35,7 @@ export default function InstallNote({ plataforma, evento, instalar, descartar })
     >
       <div className="flex items-start gap-2.5">
         <img src="/icons/icon-192.png" alt="" className="h-9 w-9 shrink-0 rounded-lg" />
-        <p className="min-w-0 flex-1 text-sm font-semibold text-slate-100">
+        <p className="min-w-0 flex-1 text-center text-sm font-semibold text-slate-100">
           {TITULOS[plataforma] ?? TITULO_POR_DEFECTO}
         </p>
         <button
