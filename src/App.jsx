@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import AppRouter from './routes/AppRouter'
 import ErrorBoundary from './components/ErrorBoundary'
 import { ToastProvider } from './components/Toast'
+import PwaUpdates from './components/PwaUpdates'
 
 const queryClient = new QueryClient()
 
@@ -14,6 +15,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <ToastProvider>
             <AuthProvider>
+              <PwaUpdates />
               <AppRouter />
             </AuthProvider>
           </ToastProvider>
