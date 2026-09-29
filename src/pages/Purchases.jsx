@@ -3,12 +3,12 @@ import { Link } from 'react-router-dom'
 import { useCompras } from '../hooks/useApi'
 import { estadosCompra, statusCompraColors, formatDate } from '../lib/constants'
 import { SkeletonTable } from '../components/Skeleton'
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import { cargarPdf } from '../lib/pdf'
 import { useAuth } from '../context/AuthContext'
 import { puede } from '../lib/permissions'
 
-const pendientesPDF = (compras) => {
+const pendientesPDF = async (compras) => {
+  const { jsPDF, autoTable } = await cargarPdf()
   const doc = new jsPDF()
   doc.setFontSize(18)
   doc.text('Compras Pendientes', 14, 22)

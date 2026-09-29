@@ -2,8 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useCompra, useDeleteCompra, useUpdateCompra, useLogsCompra, useCreateLogCompra } from '../hooks/useApi'
 import { estadosCompra, statusCompraColors, formatDate } from '../lib/constants'
 import { SkeletonCard } from '../components/Skeleton'
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import { cargarPdf } from '../lib/pdf'
 import { useToast } from '../components/Toast'
 import LogHistory from '../components/LogHistory'
 import { useAuth } from '../context/AuthContext'
@@ -41,7 +40,8 @@ export default function PurchaseDetail() {
     }
   }
 
-  const generarPDF = () => {
+  const generarPDF = async () => {
+    const { jsPDF, autoTable } = await cargarPdf()
     const doc = new jsPDF()
 
     doc.setFontSize(18)

@@ -2,8 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useOrden, useDeleteOrden, useCompletarOrden, useFotos, useLogs, useCreateLog } from '../hooks/useApi'
 import { estados, prioridades, tiposMantenimiento, priorityColors, statusColors, formatDate } from '../lib/constants'
 import { SkeletonCard } from '../components/Skeleton'
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import { cargarPdf } from '../lib/pdf'
 import { useToast } from '../components/Toast'
 import PhotoGallery from '../components/PhotoGallery'
 import LogHistory from '../components/LogHistory'
@@ -54,6 +53,7 @@ export default function WorkOrderDetail() {
   })
 
   const generarPDF = async () => {
+    const { jsPDF, autoTable } = await cargarPdf()
     const doc = new jsPDF()
     const estadoLabel = estados[orden.estado]
     const prioridadLabel = prioridades[orden.prioridad]

@@ -3,8 +3,7 @@ import { Link } from 'react-router-dom'
 import { useOrdenes, useTecnicos } from '../hooks/useApi'
 import { estados, prioridades, priorityColors, statusColors, formatDate } from '../lib/constants'
 import { SkeletonTable } from '../components/Skeleton'
-import { jsPDF } from 'jspdf'
-import autoTable from 'jspdf-autotable'
+import { cargarPdf } from '../lib/pdf'
 import { useAuth } from '../context/AuthContext'
 import { puede } from '../lib/permissions'
 
@@ -28,7 +27,8 @@ export default function WorkOrders() {
     return ordenes.filter((o) => o.tecnicoId === Number(filtroTecnico) && o.estado === 'pendiente')
   }, [filtroTecnico, ordenes])
 
-  const generarPDFPendientes = () => {
+  const generarPDFPendientes = async () => {
+    const { jsPDF, autoTable } = await cargarPdf()
     const doc = new jsPDF()
     const nombreTecnico = tecnicosMap[Number(filtroTecnico)] || 'Técnico'
 
