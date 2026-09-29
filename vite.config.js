@@ -9,8 +9,14 @@ export default defineConfig({
     tailwindcss(),
     react(),
     VitePWA({
-      // registerType 'prompt' y cleanupOutdatedCaches ya son los defaults de
-      // generateSW, asi que no se declaran.
+      // 'autoUpdate' y no el default 'prompt'. En 'prompt' el service worker
+      // nuevo queda en estado waiting hasta que el usuario acepta el aviso, y
+      // mientras tanto el viejo sigue controlando la pagina y sirviendo de la
+      // precache el bundle viejo. Un cartel de instalacion que no aparecia era
+      // justo eso: gente corriendo el codigo de la semana pasada, sin saberlo.
+      // Con 'autoUpdate' el worker nuevo hace skipWaiting, toma control y
+      // registerSW recarga solo.
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.svg', 'icons/apple-touch-icon.png'],
       manifest: {
         id: '/',
@@ -38,10 +44,11 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,ico,woff2}'],
         // Sin esto un deep link con la red caida no resuelve nada.
         navigateFallback: 'index.html',
-        // El SW toma control de la pagina abierta en la primera instalacion, pero
-        // las actualizaciones posteriores esperan a que el usuario acepte.
+        // El plugin pisa estos dos a true cuando registerType es autoUpdate.
+        // Se dejan explicitos para que el motivo se lea aca y no haya que ir a
+        // buscarlo dentro del node_modules.
         clientsClaim: true,
-        skipWaiting: false,
+        skipWaiting: true,
         runtimeCaching: [
           {
             // Fotos de entrega. Cloudinary ya versiona sus URLs, asi que

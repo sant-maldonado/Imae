@@ -171,4 +171,16 @@ test.describe('prompt de instalacion en una WebView de app', () => {
 
     await expect(page.getByText('Agregar a la pantalla')).toHaveCount(0)
   })
+
+  // Todo este archivo corre con viewport de escritorio, asi que la nota del login
+  // podia caer bajo el pliegue en un telefono sin que ningun test se enterara. Y
+  // ahi un aviso que no se ve es indistinguible de un aviso que no existe.
+  // 360x640 es el piso de Android de la zona, segun lo que se midio.
+  test('el aviso entra en la pantalla de un telefono sin scrollear', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 640 })
+    await page.goto('/login')
+
+    const caja = await nota(page).boundingBox()
+    expect(caja.y + caja.height).toBeLessThanOrEqual(640)
+  })
 })

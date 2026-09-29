@@ -22,6 +22,12 @@ export default function InstallNote({ plataforma, evento, instalar, descartar })
   const pasos = PASOS[plataforma] ?? []
   const urlChrome = plataforma === 'in-app' ? urlAbrirEnChrome() : null
 
+  // En in-app la accion real es el boton, no la lista: la WebView tiene el menu
+  // pero no el item de instalar. Los pasos pasan a una linea suelta porque, con
+  // el boton abajo, la nota se iba del pliegue en un telefono de 640 de alto y ahi
+  // un aviso que no se ve es indistinguible de un aviso que no existe.
+  const compacto = plataforma === 'in-app'
+
   return (
     <section
       aria-label="Instalar IMAE"
@@ -52,7 +58,7 @@ export default function InstallNote({ plataforma, evento, instalar, descartar })
         </button>
       ) : (
         <>
-          {pasos.length > 0 && (
+          {pasos.length > 0 && !compacto && (
             <ol className="mt-3 space-y-1.5">
               {pasos.map((paso) => {
                 const Icono = ICONOS[paso.icono]
@@ -77,6 +83,13 @@ export default function InstallNote({ plataforma, evento, instalar, descartar })
               <FiExternalLink className="h-3.5 w-3.5" />
               Abrir en Chrome
             </a>
+          )}
+          {urlChrome && compacto && (
+            // Plan B para cuando la WebView no deja abrir el intent://. Misma
+            // informacion que los pasos, en una linea.
+            <p className="mt-2 text-xs leading-snug text-slate-400">
+              Si no abre, tocá ⋮ y elegí Abrir en Chrome.
+            </p>
           )}
         </>
       )}

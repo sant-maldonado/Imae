@@ -89,11 +89,13 @@ describe('InstallNote en un in-app browser', () => {
     Object.defineProperty(navigator, 'userAgent', { value: original, configurable: true })
   })
 
-  it('cambia el titulo y lista los pasos de salir a Chrome', () => {
+  it('cambia el titulo y apila los pasos en una linea', () => {
     renderizar({ plataforma: 'in-app' })
     expect(screen.getByText('Abrí IMAE en Chrome para instalarla')).toBeInTheDocument()
-    expect(screen.getByText('Tocá ⋮, arriba a la derecha')).toBeInTheDocument()
-    expect(screen.getByText('Elegí Abrir en Chrome')).toBeInTheDocument()
+    // La lista numerada se reemplaza por una linea suelta: con el boton de Chrome
+    // abajo, la nota no entraba en 360x640 y quedaba abajo del pliegue.
+    expect(screen.queryByRole('list')).not.toBeInTheDocument()
+    expect(screen.getByText(/Si no abre, tocá ⋮/)).toBeInTheDocument()
   })
 
   it('agrega el enlace a Chrome, que es la accion real de la nota', () => {
