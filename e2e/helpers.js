@@ -77,14 +77,9 @@ async function loginCon(page, email, password) {
   await expect(page).toHaveURL('/', { timeout: 20_000 })
 }
 
-// El prompt de instalacion no molesta a estos specs por construccion, no por
-// suerte: solo se ofrece donde el navegador puede instalar de verdad (Safari en
-// iOS/macOS, los de Android, o cuando Chromium dispara beforeinstallprompt), y
-// aca el userAgent es el de Chromium de escritorio corriendo contra el dev
-// server, donde el manifest ni se genera porque devOptions esta en false.
-//
-// El aviso del login es inline, no overlay, asi que ni siquiera emulando un
-// movil rompe el formulario. Lo unico que si habria que marcar antes de cargar
-// es installDismissed, porque el overlay del area autenticada va con z-50 y
-// captura los clicks.
-export const CLAVE_PROMPT = 'installDismissed'
+// El prompt de instalacion tiene camino manual tambien en escritorio Chromium
+// (el menu de Chrome), asi que en el UA de escritorio se abriria solo sobre cada
+// pagina y el overlay z-50 capturaria los clicks. Por eso los dos configs de
+// Playwright lo siembran en el storageState, y los specs que si necesitan el
+// cartel (install-prompt.spec.js) pisan el storageState por uno vacio.
+export { CLAVE_PROMPT } from './clave-prompt.js'

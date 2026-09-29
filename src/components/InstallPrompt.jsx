@@ -58,10 +58,7 @@ export default function InstallPrompt({ abierto, plataforma, evento, instalar, c
               id="titulo-instalar"
               className="text-base font-semibold text-slate-900 dark:text-slate-100"
             >
-              Agregar IMAE a tu pantalla
-            </p>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-              Abrila desde el ícono, sin barra de navegador. Ocupa casi nada de espacio.
+              Instala IMAE como app
             </p>
           </div>
           <button

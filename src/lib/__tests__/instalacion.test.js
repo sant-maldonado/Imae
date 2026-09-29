@@ -185,10 +185,17 @@ describe('instalacion - detectarPlataformaManual', () => {
   it('ofrece la guia de macOS solo en Safari', () => {
     comoUserAgent(UA.MAC_SAFARI)
     expect(detectarPlataformaManual()).toBe('mac')
+    // Chrome de macOS no tiene "Agregar al Dock", que es un item de Safari, pero
+    // si tiene su menu de instalacion.
     comoUserAgent(UA.MAC_CHROME)
-    expect(detectarPlataformaManual()).toBeNull()
-    comoUserAgent(UA.MAC_EDGE)
-    expect(detectarPlataformaManual()).toBeNull()
+    expect(detectarPlataformaManual()).toBe('desktop')
+  })
+
+  it('ofrece la guia de escritorio en cualquier Chromium', () => {
+    for (const ua of [UA.LINUX_CHROME, UA.WINDOWS_CHROME, UA.MAC_EDGE]) {
+      comoUserAgent(ua)
+      expect(detectarPlataformaManual()).toBe('desktop')
+    }
   })
 
   it('ofrece la guia en los navegadores de Android que agregan a pantalla de inicio', () => {
@@ -203,11 +210,16 @@ describe('instalacion - detectarPlataformaManual', () => {
     expect(detectarPlataformaManual()).toBeNull()
   })
 
-  it('no ofrece nada en navegadores de escritorio sin via manual', () => {
-    for (const ua of [UA.LINUX_CHROME, UA.WINDOWS_CHROME, UA.FIREFOX_DESKTOP]) {
-      comoUserAgent(ua)
-      expect(detectarPlataformaManual()).toBeNull()
-    }
+  it('no ofrece nada en Firefox de escritorio, que no puede instalar PWA', () => {
+    comoUserAgent(UA.FIREFOX_DESKTOP)
+    expect(detectarPlataformaManual()).toBeNull()
+  })
+
+  it('tampoco ofrece nada en un in-app browser de escritorio', () => {
+    // El UA se miente y dice Chrome, asi que sin el filtro de in-app se le
+    // prometeria un menu que la WebView no tiene.
+    comoUserAgent(UA.LINUX_CHROME.replace('Chrome', 'Chrome FBAN'))
+    expect(detectarPlataformaManual()).toBeNull()
   })
 })
 
@@ -237,8 +249,8 @@ describe('instalacion - copy', () => {
     expect(CLAVE).toBe('installDismissed')
   })
 
-  it('tiene pasos numerados para las tres guias', () => {
-    for (const plataforma of ['ios', 'android', 'mac']) {
+  it('tiene pasos numerados para las cuatro guias', () => {
+    for (const plataforma of ['ios', 'android', 'mac', 'desktop']) {
       expect(PASOS[plataforma]).toHaveLength(2)
       expect(PASOS[plataforma].map((p) => p.n)).toEqual([1, 2])
     }

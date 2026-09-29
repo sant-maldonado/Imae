@@ -24,10 +24,14 @@ describe('InstallNote', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
-  it('describe el beneficio sin prometer uso sin conexion', () => {
+  it('tiene titulo y nada mas, sin descripcion', () => {
     renderizar()
-    expect(screen.getByText('Instalá IMAE como app')).toBeInTheDocument()
-    expect(screen.getByText(/sin barra de navegador/)).toBeInTheDocument()
+    expect(screen.getByText('Instala IMAE como app')).toBeInTheDocument()
+    expect(screen.queryByText(/barra de navegador/)).not.toBeInTheDocument()
+  })
+
+  it('no promete que funcione sin conexion', () => {
+    renderizar()
     expect(screen.queryByText(/conexi/)).not.toBeInTheDocument()
   })
 
@@ -35,6 +39,12 @@ describe('InstallNote', () => {
     renderizar({ plataforma: 'android' })
     expect(screen.getByText('Abrí el menú del navegador')).toBeInTheDocument()
     expect(screen.getByText('Elegí Agregar a pantalla de inicio')).toBeInTheDocument()
+  })
+
+  it('en escritorio usa los pasos del menu de Chromium', () => {
+    renderizar({ plataforma: 'desktop' })
+    expect(screen.getByText('Tocá el menú ⋮, arriba a la derecha')).toBeInTheDocument()
+    expect(screen.getByText('Elegí Instalar página como app')).toBeInTheDocument()
   })
 
   it('sin plataforma no inventa pasos', () => {

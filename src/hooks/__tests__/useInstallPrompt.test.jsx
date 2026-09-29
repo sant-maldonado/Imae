@@ -106,13 +106,11 @@ describe('useInstallPrompt - deteccion de plataforma', () => {
     expect(result.current.instalable).toBe(false)
   })
 
-  it('no ofrece la guia de macOS en Chrome de macOS, que no tiene Agregar al Dock', () => {
+  it('ofrece la guia de escritorio en Chrome, que tiene item de menu propio', () => {
     definirUserAgent(UA_MAC_CHROME)
     const { result } = renderHook(() => useInstallPrompt())
-    expect(result.current.plataforma).toBeNull()
-    // Chrome de macOS instala por su propio boton, no por un item de menu, asi
-    // que hasta que no dispare el evento no hay nada que ofrecerle.
-    expect(result.current.instalable).toBe(false)
+    expect(result.current.plataforma).toBe('desktop')
+    expect(result.current.instalable).toBe(true)
   })
 })
 
@@ -209,13 +207,13 @@ describe('useInstallPrompt - visibilidad', () => {
     expect(result.current.abierto).toBe(true)
   })
 
-  it('en un navegador sin evento no abre nada por su cuenta', () => {
+  it('en Firefox de escritorio no abre nada, porque no puede instalar', () => {
     vi.useFakeTimers()
+    definirUserAgent(UA_FIREFOX_DESKTOP)
     const { result } = renderHook(() => useInstallPrompt())
 
     act(() => vi.advanceTimersByTime(5000))
     expect(result.current.abierto).toBe(false)
-    // Y no hay nada que ofrecerle todavia.
     expect(result.current.instalable).toBe(false)
   })
 
@@ -266,7 +264,8 @@ describe('useInstallPrompt - instalar y descartar', () => {
     await waitFor(() => expect(localStorage.getItem('installDismissed')).toBe('1'))
   })
 
-  it('gasta el evento, asi que despues no queda nada que ofrecer', async () => {
+  it('gasta el evento, pero la guia de escritorio queda como plan B', async () => {
+    definirUserAgent(UA_MAC_CHROME)
     const { result } = renderHook(() => useInstallPrompt())
     dispararBeforeInstallPrompt()
 
@@ -275,7 +274,9 @@ describe('useInstallPrompt - instalar y descartar', () => {
     })
 
     expect(result.current.evento).toBeNull()
-    expect(result.current.instalable).toBe(false)
+    // Antes el item del sidebar desaparecia al gastarse el evento, porque en
+    // escritorio no habia ninguna otra via. Ahora queda la guia del menu.
+    expect(result.current.instalable).toBe(true)
   })
 
   it('descartar guarda la preferencia y oculta el sheet', () => {

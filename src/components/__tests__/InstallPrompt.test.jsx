@@ -29,7 +29,15 @@ describe('InstallPrompt', () => {
     const dialogo = screen.getByRole('dialog')
     expect(dialogo).toHaveAttribute('aria-modal', 'true')
     expect(dialogo).toHaveAttribute('aria-labelledby', 'titulo-instalar')
-    expect(screen.getByText('Agregar IMAE a tu pantalla')).toBeInTheDocument()
+    expect(screen.getByText('Instala IMAE como app')).toBeInTheDocument()
+  })
+
+  it('no tiene descripcion, solo el titulo y los pasos', () => {
+    renderizar({ plataforma: 'ios' })
+    expect(screen.getByText('Instala IMAE como app')).toBeInTheDocument()
+    // El titulo viejo, con su bajada, tiene que estar gone del todo.
+    expect(screen.queryByText('Agregar IMAE a tu pantalla')).not.toBeInTheDocument()
+    expect(screen.queryByText(/barra de navegador/)).not.toBeInTheDocument()
   })
 
   it('mueve el foco al panel al abrir', () => {
@@ -60,6 +68,12 @@ describe('InstallPrompt', () => {
       renderizar({ plataforma: 'mac' })
       expect(screen.getByText('Menú Archivo, arriba a la izquierda')).toBeInTheDocument()
       expect(screen.getByText('Agregar al Dock')).toBeInTheDocument()
+    })
+
+    it('en escritorio guia por el menu del navegador de Chromium', () => {
+      renderizar({ plataforma: 'desktop' })
+      expect(screen.getByText('Tocá el menú ⋮, arriba a la derecha')).toBeInTheDocument()
+      expect(screen.getByText('Elegí Instalar página como app')).toBeInTheDocument()
     })
 
     it('sin plataforma no inventa pasos, porque no hay guia que dar', () => {
@@ -110,7 +124,7 @@ describe('InstallPrompt', () => {
     const descartar = vi.fn()
     renderizar({ cerrarTemporal, descartar })
 
-    await userEvent.click(screen.getByText('Agregar IMAE a tu pantalla'))
+    await userEvent.click(screen.getByText('Instala IMAE como app'))
     expect(cerrarTemporal).not.toHaveBeenCalled()
     expect(descartar).not.toHaveBeenCalled()
 

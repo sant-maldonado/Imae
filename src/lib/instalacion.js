@@ -23,6 +23,13 @@ export const PASOS = {
     { n: 1, icono: 'menu', texto: 'Menú Archivo, arriba a la izquierda' },
     { n: 2, icono: 'monitor', texto: 'Agregar al Dock' },
   ],
+  // Chromium de escritorio (Chrome, Edge). Ahi el item de menu esta disponible
+  // aunque la pagina todavia no cumpla los criterios de instalabilidad, asi que
+  // si hay guia manual. Un solo copy para los dos: exponen el mismo item.
+  desktop: [
+    { n: 1, icono: 'tres-puntos', texto: 'Tocá el menú ⋮, arriba a la derecha' },
+    { n: 2, icono: 'monitor', texto: 'Elegí Instalar página como app' },
+  ],
 }
 
 // Motores que no son Chromium y por lo tanto nunca disparan el evento, aunque
@@ -75,5 +82,9 @@ export function detectarPlataformaManual() {
   if (IN_APP.test(ua)) return null
   if (/Android/.test(ua)) return 'android'
   if (/Macintosh/.test(ua) && esSafariReal()) return 'mac'
+  // Cualquier otro Chromium de escritorio. Va al final a proposito: si no
+  // dispara el evento, no puede instalar (Firefox de escritorio) y hay que
+  // quedarse en null para no ofrecer un menu que no existe.
+  if (soportaEvento()) return 'desktop'
   return null
 }

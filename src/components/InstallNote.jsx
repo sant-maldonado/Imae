@@ -27,12 +27,9 @@ export default function InstallNote({ plataforma, evento, instalar, descartar })
     >
       <div className="flex items-start gap-2.5">
         <img src="/icons/icon-192.png" alt="" className="h-9 w-9 shrink-0 rounded-lg" />
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-100">Instalá IMAE como app</p>
-          <p className="mt-0.5 text-xs text-slate-400">
-            Se abre desde un ícono, sin barra de navegador.
-          </p>
-        </div>
+        <p className="min-w-0 flex-1 text-sm font-semibold text-slate-100">
+          Instala IMAE como app
+        </p>
         <button
           onClick={descartar}
           aria-label="No mostrar de nuevo"

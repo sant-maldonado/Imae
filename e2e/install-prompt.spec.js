@@ -6,8 +6,15 @@ import { login } from './helpers'
 // caso de los tecnicos, que es el que importa.
 const UA_IPHONE =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
+const UA_CHROME_DESKTOP =
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
 
 const nota = (page) => page.getByRole('region', { name: 'Instalar IMAE' })
+
+// playwright.config.js siembra installDismissed en el storageState para que el
+// overlay no capture los clicks del resto de los specs. Este archivo es el
+// unico que necesita el cartel, asi que pisa el storageState por uno vacio.
+test.use({ storageState: { cookies: [], origins: [] } })
 
 test.describe('prompt de instalacion en iOS', () => {
   // Solo se emula el userAgent. El viewport queda de escritorio para que el
@@ -93,5 +100,31 @@ test.describe('prompt de instalacion en iOS', () => {
     await expect(page.getByText('Agregar a la pantalla')).toBeVisible({ timeout: 20_000 })
     await page.waitForTimeout(1500)
     await expect(sheet).toHaveCount(0)
+  })
+})
+
+// El caso de escritorio es el que mas se rompio: sin el evento de Chromium el
+// hook se quedaba esperando y no mostraba ni el sheet ni el item del sidebar.
+test.describe('prompt de instalacion en escritorio', () => {
+  test.use({ userAgent: UA_CHROME_DESKTOP })
+
+  test('ofrece la guia del menu de Chrome, sin esperar al evento', async ({ page }) => {
+    await login(page)
+
+    const sheet = page.getByRole('dialog')
+    await expect(sheet).toBeVisible({ timeout: 10_000 })
+    await expect(sheet.getByText('Tocá el menú ⋮, arriba a la derecha')).toBeVisible()
+    await expect(sheet.getByText('Elegí Instalar página como app')).toBeVisible()
+    // El titulo es el mismo que en el celu y no lleva descripcion.
+    await expect(sheet.getByText('Instala IMAE como app')).toBeVisible()
+    await expect(sheet.getByText(/barra de navegador/)).toHaveCount(0)
+  })
+
+  test('aparece sin iniciar sesion, en el login', async ({ page }) => {
+    await page.goto('/login')
+    const nota = page.getByRole('region', { name: 'Instalar IMAE' })
+    await expect(nota).toBeVisible()
+    await expect(nota.getByText('Instala IMAE como app')).toBeVisible()
+    await expect(nota.getByText('Elegí Instalar página como app')).toBeVisible()
   })
 })
