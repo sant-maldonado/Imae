@@ -4,6 +4,7 @@ import {
   montarOverlay,
   escena,
   cartela,
+  cartelaContacto,
   irA,
   marcaVisible,
   escribirGuion,
@@ -95,9 +96,10 @@ test('video de presentacion: tecnico', async ({ page }) => {
   await escena(page, 'Y ya está en el sistema', 1780)
 
   // ------------------------------------------------- se instala como una app
-  // Se abre desde el item del sidebar y no esperando que aparezca solo: el
-  // overlay z-50 del sheet se come los clicks y abrirlo a mano es lo que hace
-  // un usuario la segunda vez que lo cerro.
+  // Va en try/catch y no directo. El cartel de instalacion es una hoja de la PWA
+  // que la app abre sola cuando todavia no se descarta, y no hay forma de
+  // apagarlo desde aca: se cae el paso y se avisa por log, en vez de perder el
+  // video entero. Que ademas abra bien es otra cosa, no lo comprueba nadie.
   try {
     await page.locator('aside').getByRole('button', { name: 'Agregar a la pantalla' }).click()
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 15000 })
@@ -109,9 +111,14 @@ test('video de presentacion: tecnico', async ({ page }) => {
   }
 
   // ----------------------------------------------------------------- cierre
-  // El dominio no se narra (suena mal en voz alta) pero queda en pantalla.
+  // La foto y los datos. La voz no los lee, por eso el ultimo paso del guion
+  // queda en silencio. Los datos vienen de interno/contacto/datos.json, no de
+  // este archivo: el spec se commitea y la app es publica.
+  //
+  // El respiro antes de la tarjeta lo verifica cartelaContacto().
   await marcaVisible(page, true)
-  await cartela(page, 'IMAE', 'imae-nu.vercel.app · Control de mantenimiento', 2890)
+  await page.waitForTimeout(700)
+  await cartelaContacto(page, 4200)
 
   const { guion, srt } = escribirGuion('tecnico')
   console.log(`guion: ${guion}`)

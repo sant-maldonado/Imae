@@ -45,6 +45,20 @@ node e2e-demo/limpiar.mjs                                     # borrar de verdad
 - **Los videos van con voz.** `voz.mjs` lee el `.srt` de la corrida, genera un
   audio por frase con `edge-tts` y lo empasta en el milisegundo exacto en que
   aparece cada subtítulo. El mudo se guarda aparte como `<rol>-sin-voz.mp4`.
+- **Los videos no llevan banda de subtítulo.** Ver `CARTELES` en `ayuda.js`:
+  con la banda apagada la app se ve limpia y solo se escucha la voz. El `.srt`
+  se sigue escribiendo igual, porque es lo que usa `voz.mjs` para ubicar el
+  audio. Ojo con esto: la banda se encendía con 380 ms de espera por escena
+  para que la transición de opacidad terminara, así que al apagarla cada escena
+  dura 380 ms menos y los videos se acortan solos (el admin pasó de 1:48 a
+  1:35). Los milisegundos de los specs no cambian.
+- **El cierre del video del técnico es la tarjeta de contacto** (foto, nombre,
+  rol, teléfono y email). Los datos NO van en el spec: van en
+  `interno/contacto/datos.json`, que ya está en `.gitignore`, y la foto al lado.
+  `ejemplo.json` está para copiar. La tarjeta no se narra, y por eso su escena
+  va en el `.guion.md` con el texto vacío: `escribirGuion()` saca del `.srt` las
+  escenas sin texto, que es el mismo mecanismo para separar lo que se ve de lo
+  que se dice.
 - La voz necesita `pip install edge-tts` y se llama como `python -m edge_tts`
   (el ejecutable no queda en el PATH de una sesión vieja de PowerShell). Las
   voces es-AR que hay son Elena y Tomas; no existe ninguna "Joaquin".
