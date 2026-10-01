@@ -87,7 +87,18 @@ function sanear(texto) {
     .trim()
 }
 
-const slug = (t) =>
+// El nombre del archivo ES la identidad de la frase, asi que tiene que
+// depender del texto entero y no de un pedazo.
+//
+// Con el nombre cortado a 34 caracteres, "... y el taller lo sabe al toque" y
+// "... y el taller lo sabe en el momento" daban el MISMO archivo. La cache veia
+// que el clip existia y lo reusaba, y el video terminaba con la frase vieja
+// mientras el .srt decia la nueva. Como el script solo imprime "generado" cuando
+// crea un clip, no decia nada y el problema pasaba inadvertido.
+//
+// El hash del texto completo hace que eso no pueda pasar. El prefijo legible se
+// mantiene porque sirve para reconocer el clip a simple vista.
+const NOMBRE = (t) =>
   t
     .toLowerCase()
     .normalize('NFD')
@@ -97,6 +108,10 @@ const slug = (t) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 34)
+
+const hash = (t) => crypto.createHash('sha1').update(t).digest('hex').slice(0, 6)
+
+const slug = (t) => `${NOMBRE(t)}-${hash(t)}`
 
 // ------------------------------------------------------------------- srt
 
@@ -273,6 +288,22 @@ function armar(rol) {
 
   const clips = []
   let desborde = 0
+
+  // Dos frases distintas no pueden terminar en el mismo archivo. Es exactamente
+  // lo que se rompio cuando el nombre venia truncado, y el costo era invisible:
+  // el .srt decia una cosa y el audio decia otra. Con el hash no puede pasar,
+  // pero en vez de confiar en que el nombre este bien escrito se comprueba.
+  const usados = new Map()
+  cues.forEach((c, i) => {
+    const archivo = `${String(i + 1).padStart(2, '0')}-${slug(sanear(c.texto))}.mp3`
+    if (usados.has(archivo)) {
+      throw new Error(
+        `Las frases ${usados.get(archivo) + 1} y ${i + 1} de ${rol} usan el mismo archivo (${archivo}). ` +
+          `Tienen que ser archivos distintos: si no, una pisa el audio de la otra en silencio.`
+      )
+    }
+    usados.set(archivo, i)
+  })
 
   cues.forEach((c, i) => {
     const limpio = sanear(c.texto)

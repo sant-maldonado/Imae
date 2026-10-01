@@ -79,10 +79,27 @@ node e2e-demo/limpiar.mjs                                     # borrar de verdad
   de lo que parece (~2,2 palabras por segundo) y si la escena queda corta la
   frase se corta con ella. `--medir` regenera los clips de medición, no toca los
   del video.
-- Los clips sueltos quedan en `videos/voz/<rol>/NN-slug.mp3`. Si alguno no te
-  gusta, lo regrabás con lo que quieras, lo guardás con el mismo nombre y
+- Los clips sueltos quedan en `videos/voz/<rol>/NN-slug-hash.mp3`. Si alguno no
+  te gusta, lo regrabás con lo que quieras, lo guardás con el mismo nombre y
   corrés `voz.mjs` de nuevo: el archivo se reutiliza sin volver a pedirle nada
   a Microsoft. Por eso conviene no borrar esa carpeta entre corridas.
+- **El hash del final del nombre no es decorativo.** El nombre del clip es la
+  identidad de la frase, así que depende del texto ENTERO, no de un prefijo. Con
+  el nombre truncado a 34 caracteres, "... y el taller lo sabe al toque" y
+  "... y el taller lo sabe en el momento" daban el mismo archivo: la caché
+  reusaba el audio viejo, el `.srt` decía la frase nueva y el video decía la
+  vieja. Pasó de verdad, y no se vio porque `voz.mjs` solo imprime `generado`
+  cuando crea un clip.
+- **Después de cambiar una frase, `voz.mjs` tiene que imprimir `generado` para
+  esa frase.** Si no imprime nada, estás escuchando el audio viejo. Ese silencio
+  es la única señal, así que hay que mirarlo, no pasar por encima. `armar()`
+  además falla si dos frases del mismo rol terminan en el mismo archivo.
+- Si se cambia el hash o el formato del nombre, la caché vieja queda huérfana y
+  hay que **borrar a mano solo los clips de las frases que cambiaron** antes de
+  rearmar. No se puede renombrar el resto automáticamente: el nombre viejo es un
+  prefijo, y el clip de una frase editada tiene el mismo nombre viejo que el de
+  la frase nueva, así que un renombrado automático volvería a pegar el audio
+  equivocado en silencio.
 - No se puede verificar el video mirando ni escuchando. El autcheck de `escena()`
   comprueba que la leyenda se ve, tiene el texto del guion y no desborda, y
   `voz.mjs` mide el nivel de audio de cada ventana del `.srt` para confirmar que
