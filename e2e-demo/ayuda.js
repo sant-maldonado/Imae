@@ -248,6 +248,12 @@ async function marcarMarca(page, visible) {
   await marcaVisible(page, visible)
 }
 
+// La navegacion va con mas margen que el resto. Se graba contra produccion y
+// una instancia de Vercel en plan hobby tiene arranques en frios: se la midio
+// responding en 34s cuando normalmente va en 100ms, y con los 20s del default
+// la grabacion se cae entera y hay que empezar de cero.
+export const TIMEOUT_NAVEGACION = 60000
+
 // ------------------------------------------------------------------ contacto
 
 // Los datos de la tarjeta final NO van en el spec: el spec se commitea y la app
@@ -372,7 +378,7 @@ export async function cartelaContacto(page, ms = 4200) {
 // El login se escribe a mano con pressSequentially. El .fill() de los E2E pega
 // el texto de golpe y el video se ve como que nadie esta tipeando.
 export async function ingresar(page, email, password) {
-  await page.goto('/login')
+  await page.goto('/login', { timeout: TIMEOUT_NAVEGACION })
   // El goto de arriba recarga el documento y se lleva el overlay puesto, asi
   // que hay que volver a montarlo. Sin esto, las leyendas siguientes quedan
   // invisibles (leyenda() no falla si no encuentra el nodo) y la cartela final

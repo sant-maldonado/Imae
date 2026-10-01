@@ -9,6 +9,7 @@ import {
   marcaVisible,
   escribirGuion,
   ingresar,
+  TIMEOUT_NAVEGACION,
 } from './ayuda.js'
 
 // Los milisegundos de cada escena NO son una estimacion: son el largo real del
@@ -25,7 +26,7 @@ test('video de presentacion: tecnico', async ({ page }) => {
   // timeout del test entero (9 min) en vez de fallar al toque.
   page.setDefaultTimeout(20000)
 
-  await page.goto('/login')
+  await page.goto('/login', { timeout: TIMEOUT_NAVEGACION })
   await montarOverlay(page)
 
   // ---------------------------------------------------------------- portada
@@ -47,8 +48,11 @@ test('video de presentacion: tecnico', async ({ page }) => {
   await escena(page, 'El técnico ve el estado de SU trabajo, no el de todo el taller', 3320)
 
   // ---------------------------------------------------------------- ordenes
+  // El buscador va con timeout explicito. La pagina carga el banner y el main
+  // vacio mientras espera a Supabase, asi que 5s (el default de expect) se
+  // quedan cortos cuando la red viene lenta y la grabacion se cae entera.
   await irA(page, 'Órdenes')
-  await expect(page.getByPlaceholder('Buscar por título...')).toBeVisible()
+  await expect(page.getByPlaceholder('Buscar por título...')).toBeVisible({ timeout: 20000 })
   await escena(page, 'Solo las órdenes que tiene asignadas', 2340)
 
   // ------------------------------------------- detalle y avance del trabajo
@@ -67,7 +71,7 @@ test('video de presentacion: tecnico', async ({ page }) => {
   try {
     await page.click('button:has-text("Completar")')
     await expect(page.getByRole('button', { name: 'Completar' })).toHaveCount(0, { timeout: 15000 })
-    await escena(page, 'Cuando termina, la marca como completada y el taller lo sabe al toque', 3480)
+    await escena(page, 'Cuando termina, la marca como completada y el taller lo sabe en el momento', 3670)
   } catch (e) {
     console.log(`  (no se pudo completar la orden: ${e.message})`)
   }

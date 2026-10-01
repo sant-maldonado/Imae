@@ -40,6 +40,17 @@ node e2e-demo/limpiar.mjs                                     # borrar de verdad
 - Un spec por corrida. Playwright limpia `outputDir` al empezar, así que el
   teardown copia el `.webm` y lo convierte antes de que el video anterior se
   pierda. Por eso no se pueden pasar los dos specs en la misma corrida.
+- **El guion se edita en el spec, no en `videos/`.** Los `.guion.md` y los
+  `.srt` de `videos/` son salidas generadas: `escribirGuion()` los pisa al final
+  de cada grabación. Editar el `.guion.md` a mano no cambia el video, y la
+  próxima corrida lo borra. La frase de cada escena vive en el
+  `escena(page, 'texto', ms)` del spec. Es un error fácil de cometer porque el
+  `.guion.md` parece el documento maestro.
+- **Producción tiene latencia variable.** Se la midio respondiendo en 34 s
+  cuando normalmente va en 80 ms (arranque en frío de Vercel). Por eso
+  `TIMEOUT_NAVEGACION` es de 60 s, y si una grabación sale con varios segundos
+  de pantalla en blanco al principio, no es un bug del guion: es que la primera
+  carga tardó. Re-correr cuando la red está rápida.
 - Sale `.mp4` (H.264/yuv420p, lo que WhatsApp reproduce), `.webm` crudo,
   `.srt` y `.guion.md` con los tiempos reales, más `orden-muestra.pdf`.
 - **Los videos van con voz.** `voz.mjs` lee el `.srt` de la corrida, genera un

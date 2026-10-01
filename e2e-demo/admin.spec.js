@@ -9,6 +9,7 @@ import {
   marcaVisible,
   escribirGuion,
   ingresar,
+  TIMEOUT_NAVEGACION,
 } from './ayuda.js'
 
 // Los milisegundos de cada escena NO son una estimacion: son el largo real del
@@ -35,7 +36,7 @@ test('video de presentacion: admin', async ({ page }) => {
   // navegacion. Sin esto la descarga se cancela y el archivo sale vacio.
   page.on('download', () => {})
 
-  await page.goto('/login')
+  await page.goto('/login', { timeout: TIMEOUT_NAVEGACION })
   await montarOverlay(page)
 
   // ---------------------------------------------------------------- portada
