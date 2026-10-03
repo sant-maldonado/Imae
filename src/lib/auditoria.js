@@ -1,4 +1,4 @@
-import { estados, prioridades, tiposMantenimiento } from './constants'
+import { estados, prioridades, tiposMantenimiento, formatDate } from './constants'
 
 // Los labels y el despliegue de valores viven ACA y no en el componente, porque
 // el historial se muestra en dos lugares distintos: en la ficha y en el PDF de la
@@ -69,6 +69,10 @@ export function valorDelLog(campo, valor) {
   const vacio = normalizar(valor)
   const labels = LABELS_ENUM[campo]
   if (labels) return labels[vacio] || vacio || '—'
+  // La fecha se guarda cruda porque es lo que viaja a la base, pero ni la
+  // pantalla ni el papel la quieren asi: al lado de un 03/10/2026, un
+  // 2026-10-20 parece un dato que se coloco de otra fuente.
+  if (campo === 'fecha_programada') return formatDate(vacio) || '—'
   return vacio || '—'
 }
 

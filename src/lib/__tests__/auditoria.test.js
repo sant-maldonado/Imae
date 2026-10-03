@@ -20,6 +20,13 @@ describe('valorDelLog', () => {
     expect(valorDelLog('estado', null)).toBe('—')
     expect(valorDelLog('tecnico', undefined)).toBe('—')
   })
+
+  it('muestra la fecha programada como fecha, no como ISO', () => {
+    // El log guarda la fecha cruda porque es lo que viaja a la base, pero el
+    // papel la tiene que mostrar como el resto de las fechas.
+    expect(valorDelLog('fecha_programada', '2026-10-27')).toBe('27/10/2026')
+    expect(valorDelLog('fecha_programada', '')).toBe('—')
+  })
 })
 
 describe('valorDesdeForm', () => {
