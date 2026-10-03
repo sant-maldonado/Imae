@@ -17,6 +17,15 @@ import {
 // voz manda sobre el texto, no al revés. Si se cambia una frase hay que volver
 // a medirla (ver la seccion de videos de AGENTS.md) antes de regrabar, o la
 // voz se corta o la escena queda mirando al vacio.
+//
+// Este video no lleva el puente ("Hoy vas a ver el mantenimiento..."): esa frase
+// le habla al director y al area de Calidad, y va en el video del admin, que es
+// el primero. Si a este video lo ve alguien suelto, la entrada por el usuario ya
+// dice de que se trata.
+//
+// Las dos ordenes que usa las siembra e2e-demo/preparar.mjs con el prefijo que
+// e2e-demo/limpiar.mjs borra. Sin correr preparar antes de grabar, el tecnico
+// solo tiene las suyas y esta escena no tiene nada que abrir.
 
 test('video de presentacion: tecnico', async ({ page }) => {
   reiniciar()
@@ -35,7 +44,7 @@ test('video de presentacion: tecnico', async ({ page }) => {
   // ----------------------------------------------------------------- ingreso
   // escena() y no leyenda(): la segunda solo pinta el texto y no lo anota en el
   // guion, asi que el audio de esa frase no tendria donde apoyarse.
-  await escena(page, 'Cada uno entra con su usuario', 2030)
+  await escena(page, 'Cada uno entra con su usuario: el acceso es personal', 3110)
   await ingresar(page, process.env.E2E_TECNICO_EMAIL, process.env.E2E_TECNICO_PASSWORD)
   await marcaVisible(page, true)
 
@@ -53,7 +62,7 @@ test('video de presentacion: tecnico', async ({ page }) => {
   // quedan cortos cuando la red viene lenta y la grabacion se cae entera.
   await irA(page, 'Órdenes')
   await expect(page.getByPlaceholder('Buscar por título...')).toBeVisible({ timeout: 20000 })
-  await escena(page, 'Solo las órdenes que tiene asignadas', 2340)
+  await escena(page, 'Solo las órdenes que tiene asignadas', 2400)
 
   // ------------------------------------------- detalle y avance del trabajo
   await page.getByPlaceholder('Buscar por título...').fill('Mantenimiento preventivo')
@@ -63,15 +72,27 @@ test('video de presentacion: tecnico', async ({ page }) => {
   await fila.locator('a:has-text("Ver detalle")').click()
   await expect(page.getByText('Fotos de avance')).toBeVisible({ timeout: 20000 })
   await marcaVisible(page, false)
-  await escena(page, 'Ve el detalle completo, con su historial', 2550)
+  // Sin historial todavia: la orden la sembro preparar.mjs por API, y el log de
+  // alta lo escribe la app. Por eso la frase no promete historial aqui: el
+  // aparece mas abajo, despues de completar, que es cuando hay algo que mostrar.
+  await escena(page, 'Ve el detalle completo de la orden que le toca', 2610)
 
+  // ------------------------------------------------------- completar y anotar
   await marcaVisible(page, true)
   // El boton de una orden de trabajo es "Completar". El "Marcar En Curso" que
   // usa el E2E de compras es de PurchaseDetail, no de WorkOrderDetail.
   try {
     await page.click('button:has-text("Completar")')
     await expect(page.getByRole('button', { name: 'Completar' })).toHaveCount(0, { timeout: 15000 })
-    await escena(page, 'Cuando termina, la marca como completada y el taller lo sabe en el momento', 3670)
+    // La espera es por la fila, no por un tiempo: el log va en un POST aparte del
+    // que cambia el estado, asi que puede tardar mas. Sin esto la escena arranca
+    // sobre una ficha sin historial y la frase no tiene nada que respaldar.
+    await page.getByText('Historial de cambios').scrollIntoViewIfNeeded()
+    await expect(
+      page.locator('[data-testid="log-historial"]', { hasText: 'Estado cambiado' })
+    ).toBeVisible({ timeout: 20000 })
+    await marcaVisible(page, false)
+    await escena(page, 'La marca como completada, y queda registrado quién lo completó y cuándo', 3710)
   } catch (e) {
     console.log(`  (no se pudo completar la orden: ${e.message})`)
   }
@@ -86,18 +107,19 @@ test('video de presentacion: tecnico', async ({ page }) => {
   const selectTecnico = page.getByLabel('Técnico (vos)')
   await expect(selectTecnico).toBeVisible({ timeout: 20000 })
   await expect(selectTecnico.locator('option')).toHaveCount(2)
-  await escena(page, 'Puede dar de alta una orden, pero solo puede asignársela a sí mismo', 3510)
+  await marcaVisible(page, true)
+  await escena(page, 'Puede dar de alta una orden, pero no puede asignársela a otro ni cambiarle el estado', 3990)
 
   await page.getByLabel('Título').fill('Presentacion IMAE - Ajuste de mesa')
   await page.getByLabel('Descripción').fill('Ajuste de la mesa y verificación de paralelismo.')
   await selectTecnico.selectOption({ index: 1 })
   await page.getByLabel('Fecha Programada').fill('2026-10-20')
   await page.waitForTimeout(900)
-  await escena(page, 'La carga en el momento, en el taller, sin volver a la oficina', 3270)
+  await escena(page, 'La carga en el momento, en el taller, sin volver a la oficina', 3280)
 
   await page.click('button:has-text("Crear Orden")')
   await expect(page).toHaveURL('/ordenes')
-  await escena(page, 'Y ya está en el sistema', 1780)
+  await escena(page, 'Y ya está en el sistema', 1750)
 
   // ------------------------------------------------- se instala como una app
   // Va en try/catch y no directo. El cartel de instalacion es una hoja de la PWA
@@ -108,7 +130,7 @@ test('video de presentacion: tecnico', async ({ page }) => {
     await page.locator('aside').getByRole('button', { name: 'Agregar a la pantalla' }).click()
     await expect(page.getByRole('dialog')).toBeVisible({ timeout: 15000 })
     await marcaVisible(page, false)
-    await escena(page, 'Y se instala en el celular como una app, con icono propio', 3020)
+    await escena(page, 'Y se instala en el celular como una app, con icono propio', 3030)
     await page.keyboard.press('Escape')
   } catch (e) {
     console.log(`  (no se pudo abrir el cartel de instalacion: ${e.message})`)
