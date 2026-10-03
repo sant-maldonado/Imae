@@ -170,9 +170,11 @@ test.describe('permisos por rol', () => {
     await expect(select).toBeVisible()
     // El select se pinta con "Sin asignar" solo y las fichas se agregan cuando
     // resuelve la query de tecnicos. Contar apenas aparece el select da un
-    // falso 0 y el test falla segun cuanta tarde la red.
+    // falso 1 y el test falla segun cuanta tarde la red. El timeout es de 20s
+    // y no el default de 5s porque las opciones llegan de Supabase, y en
+    // produccion esa consulta puede tardar mas de eso.
     const opciones = select.locator('option')
-    await expect(opciones).toHaveCount(2)
+    await expect(opciones).toHaveCount(2, { timeout: 20000 })
     // El RLS no le deja asignar a otro, asi que el select no ofrece mas que
     // su propia ficha. Con otra seria la cuenta ajena expuesta en el propio HTML.
     await expect(opciones.nth(0)).toHaveText('Sin asignar')
