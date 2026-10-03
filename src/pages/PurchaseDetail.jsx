@@ -33,8 +33,14 @@ export default function PurchaseDetail() {
   const handleEstadoChange = async (nuevoEstado) => {
     try {
       await updateCompra.mutateAsync({ id, data: { estado: nuevoEstado } })
-      createLog.mutate({ compra_id: id, accion: 'estado_cambiado', campo: 'estado', valor_anterior: compra.estado, valor_nuevo: nuevoEstado })
-      toast.success(`Estado cambiado a ${estadosCompra[nuevoEstado]}`)
+      // Se espera el log antes de avisar, por la misma razon que en las ordenes:
+      // con mutate() la peticion queda en vuelo y se pierde si el usuario navega
+      // enseguida. El estado ya esta guardado, asi que si el log falla no se
+      // deshace, pero hay que decirlo.
+      await createLog
+        .mutateAsync({ compra_id: id, accion: 'estado_cambiado', campo: 'estado', valor_anterior: compra.estado, valor_nuevo: nuevoEstado })
+        .then(() => toast.success(`Estado cambiado a ${estadosCompra[nuevoEstado]}`))
+        .catch(() => toast.error('El estado se guardó, pero no quedó en el historial'))
     } catch (err) {
       toast.error(err.message)
     }

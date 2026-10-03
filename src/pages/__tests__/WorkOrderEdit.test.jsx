@@ -5,7 +5,7 @@ import { TestWrapper } from '../../test/TestWrapper'
 import WorkOrderEdit from '../WorkOrderEdit'
 
 const mockMutateAsync = vi.fn()
-const mockLogMutate = vi.fn()
+const mockLogMutateAsync = vi.fn()
 const mockNavigate = vi.fn()
 
 const mockAuth = vi.hoisted(() => ({ perfil: { nombre: 'Admin', email: 'admin@imaemantenimiento.com', rol: 'admin' } }))
@@ -17,6 +17,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   mockAuth.perfil = { nombre: 'Admin', email: 'admin@imaemantenimiento.com', rol: 'admin' }
   mockOrden.estado = 'en_progreso'
+  mockLogMutateAsync.mockResolvedValue({})
 })
 
 vi.mock('../../hooks/useApi', () => ({
@@ -36,7 +37,7 @@ vi.mock('../../hooks/useApi', () => ({
     isLoading: false,
   }),
     useEditarOrden: () => ({ mutateAsync: mockMutateAsync, isPending: false }),
-  useCreateLog: () => ({ mutate: mockLogMutate }),
+  useCreateLog: () => ({ mutateAsync: mockLogMutateAsync }),
     useEquipos: () => ({ data: [{ id: 'e1', nombre: 'Torno CNC', codigo: 'TC-001' }] }),
     useTecnicos: () => ({
       data: [
@@ -88,6 +89,48 @@ describe('WorkOrderEdit page', () => {
         }),
       })
     })
+    expect(mockNavigate).toHaveBeenCalledWith('/ordenes/7')
+  })
+
+  it('espera el log antes de navegar', async () => {
+    // Con mutate() la peticion del log queda en vuelo y navigate() la cancela:
+    // la reprogramacion llegaba a la base y no dejaba rastro. El log tiene que
+    // estar escrito antes de salir de la pagina.
+    mockMutateAsync.mockResolvedValue({ id: 7 })
+    let cerrarLog
+    mockLogMutateAsync.mockReturnValue(
+      new Promise((resolver) => {
+        cerrarLog = resolver
+      }),
+    )
+    const user = userEvent.setup()
+    render(<WorkOrderEdit />, { wrapper: TestWrapper })
+
+    await user.selectOptions(screen.getByLabelText('Prioridad'), 'urgente')
+    await user.click(screen.getByText('Guardar Cambios'))
+
+    await waitFor(() => expect(mockLogMutateAsync).toHaveBeenCalled())
+    expect(mockLogMutateAsync).toHaveBeenCalledWith(
+      expect.objectContaining({ orden_id: '7', accion: 'actualizada', campo: 'prioridad' }),
+    )
+    expect(mockNavigate).not.toHaveBeenCalled()
+
+    cerrarLog({})
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/ordenes/7'))
+  })
+
+  it('avisa si se guardo el cambio pero no quedo en el historial', async () => {
+    // La orden ya esta guardada: no se deshace, pero tampoco se puede decir
+    // "actualizada" como si el registro estuviera.
+    mockMutateAsync.mockResolvedValue({ id: 7 })
+    mockLogMutateAsync.mockRejectedValue(new Error('sin permiso'))
+    const user = userEvent.setup()
+    render(<WorkOrderEdit />, { wrapper: TestWrapper })
+
+    await user.selectOptions(screen.getByLabelText('Prioridad'), 'urgente')
+    await user.click(screen.getByText('Guardar Cambios'))
+
+    expect(await screen.findByText(/no quedó en el historial/)).toBeInTheDocument()
     expect(mockNavigate).toHaveBeenCalledWith('/ordenes/7')
   })
 

@@ -26,7 +26,7 @@ vi.mock('../../hooks/useApi', () => ({
   useFotos: () => ({ data: [] }),
   useDeleteFoto: () => ({ mutate: vi.fn() }),
   useLogs: () => ({ data: [] }),
-  useCreateLog: () => ({ mutate: vi.fn() }),
+  useCreateLog: () => ({ mutateAsync: vi.fn().mockResolvedValue({}) }),
   useCompletarOrden: () => ({ mutateAsync: mockCompletar, isPending: false }),
   useDeleteOrden: () => ({ mutateAsync: vi.fn() }),
 }))

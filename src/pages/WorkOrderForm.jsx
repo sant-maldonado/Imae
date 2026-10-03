@@ -64,7 +64,13 @@ export default function WorkOrderForm() {
       // Va recien creada la orden, y no al final, porque si despues falla la
       // subida de una foto la orden queda creada igual y tiene que tener su
       // registro. Sin campo: lo que importa del alta es quien y cuando.
-      createLog.mutate({ orden_id: ordenId, accion: 'creada' })
+      //
+      // Se espera el log antes de seguir: con mutate() la peticion queda en
+      // vuelo y se cancela al navegar, y entonces la orden queda creada sin
+      // registro de quien la creo.
+      await createLog
+        .mutateAsync({ orden_id: ordenId, accion: 'creada' })
+        .catch(() => toast.error('La orden se creó, pero no quedó registrada en el historial'))
 
       if (fotos.length > 0) {
         const { data: { user } } = await supabase.auth.getUser()

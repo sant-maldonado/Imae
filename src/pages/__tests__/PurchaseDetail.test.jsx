@@ -11,7 +11,7 @@ vi.mock('../../hooks/useApi', () => ({
   useLogsCompra: () => ({ data: [] }),
   useDeleteCompra: () => ({ mutateAsync: vi.fn() }),
   useUpdateCompra: () => ({ mutateAsync: vi.fn() }),
-  useCreateLogCompra: () => ({ mutate: vi.fn() }),
+  useCreateLogCompra: () => ({ mutateAsync: vi.fn().mockResolvedValue({}) }),
 }))
 
 vi.mock('react-router-dom', async () => {

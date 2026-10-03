@@ -76,5 +76,10 @@ export function formatDateTime(dateStr) {
   if (!dateStr.includes('T')) return formatDate(dateStr)
   const d = new Date(dateStr)
   if (Number.isNaN(d.getTime())) return formatDate(dateStr)
-  return d.toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
+  // Mismo dd/mm/aaaa que formatDate y hora de 24, todo de una vez. Lo que sale
+  // de toLocaleString es "3/10/26, 11:51 a. m.": con el "a. m." y el año de dos
+  // cifras, en un papel donde al lado dice 03/10/2026, parece que las fechas las
+  // escribieron dos personas distintas.
+  const dos = (n) => String(n).padStart(2, '0')
+  return `${dos(d.getDate())}/${dos(d.getMonth() + 1)}/${d.getFullYear()} ${dos(d.getHours())}:${dos(d.getMinutes())}`
 }

@@ -212,8 +212,13 @@ export default function WorkOrderDetail() {
       toast.error(err.message)
       return
     }
-    createLog.mutate({ orden_id: id, accion: 'estado_cambiado', campo: 'estado', valor_anterior: orden.estado, valor_nuevo: 'completada' })
-    toast.success('Orden completada')
+    // Se espera el log antes de avisar: con mutate() la peticion queda en vuelo y
+    // se pierde si el usuario navega enseguida. El estado ya esta guardado, asi
+    // que si el log falla no se deshace, pero hay que decirlo.
+    await createLog
+      .mutateAsync({ orden_id: id, accion: 'estado_cambiado', campo: 'estado', valor_anterior: orden.estado, valor_nuevo: 'completada' })
+      .then(() => toast.success('Orden completada'))
+      .catch(() => toast.error('La orden se completó, pero el cambio no quedó en el historial'))
   }
 
   return (

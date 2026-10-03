@@ -76,4 +76,13 @@ describe('camposEditados', () => {
   it('trata null y cadena vacia como el mismo valor', () => {
     expect(camposEditados({ ...orden, tecnicoId: null }, { ...orden, tecnicoId: '' }, ctx)).toEqual([])
   })
+
+  it('registra la reprogramacion de la fecha', () => {
+    // La fecha es el campo que mas se toca en la practica: si reprogramar no
+    // queda asentado, el historial no sirve para reconstruir cuando se prometio
+    // intervene.
+    expect(camposEditados(orden, { ...orden, fechaProgramada: '2026-10-27' }, ctx)).toEqual([
+      { campo: 'fecha_programada', valor_anterior: '2026-10-20', valor_nuevo: '2026-10-27' },
+    ])
+  })
 })

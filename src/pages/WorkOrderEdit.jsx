@@ -67,10 +67,22 @@ function FormOrden({ orden }) {
       // Un log por campo que realmente cambio. Si no cambio nada no se escribe
       // ninguno: un "Actualizada" sin detalle no prueba nada y ensucia el
       // historial, que es lo que Calidad va a leer.
-      camposEditados(orden, data, { equipos, tecnicos }).forEach((cambio) => {
-        createLog.mutate({ orden_id: id, accion: 'actualizada', ...cambio })
-      })
-      toast.success('Orden actualizada')
+      const cambios = camposEditados(orden, data, { equipos, tecnicos })
+      // Los logs se ESPERAN antes de cambiar de ruta. Con mutate() la peticion
+      // queda en vuelo y navigate() la cancela: la orden se guardaba igual pero
+      // el historial perdia el cambio sin avisar. Se vio con la reprogramacion
+      // de fecha, que llegaba a la base y no dejaba rastro.
+      const registrados = await Promise.all(
+        cambios.map((cambio) => createLog.mutateAsync({ orden_id: id, accion: 'actualizada', ...cambio })),
+      ).catch(() => null)
+
+      // La orden ya esta guardada: si el log falla no se deshace nada, pero
+      // tampoco se puede avisar "actualizada" como si el registro estuviera.
+      if (cambios.length > 0 && registrados === null) {
+        toast.error('La orden se guardó, pero el cambio no quedó en el historial')
+      } else {
+        toast.success('Orden actualizada')
+      }
       navigate(`/ordenes/${id}`)
     } catch (err) {
       setError(err.message)
