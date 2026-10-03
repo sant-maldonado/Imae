@@ -9,7 +9,14 @@ export default function LogHistory({ logs }) {
       <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3">Historial de cambios</h4>
       <div className="space-y-2">
         {logs.map((log) => (
-          <div key={log.id} className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
+          // Con testid porque el texto de cada fila se repite en la pagina: el
+          // label del dato que cambio esta mas arriba, asi que un assert por
+          // texto ("Fecha programada") matchea los dos y falla por ambiguedad.
+          <div
+            key={log.id}
+            data-testid="log-historial"
+            className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400"
+          >
             <div className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0" />
             <div className="flex-1 min-w-0">
               <span className="font-medium text-slate-600 dark:text-slate-300">{accionLabels[log.accion] || log.accion}</span>
