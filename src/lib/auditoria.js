@@ -1,4 +1,4 @@
-import { estados, prioridades, tiposMantenimiento, formatDate } from './constants'
+import { estados, estadosCompra, prioridades, tiposMantenimiento, formatDate } from './constants'
 
 // Los labels y el despliegue de valores viven ACA y no en el componente, porque
 // el historial se muestra en dos lugares distintos: en la ficha y en el PDF de la
@@ -39,7 +39,12 @@ const CAMPOS_EDITABLES = {
 // ('Completada'), porque asi los logs que ya existian en la base se leen bien sin
 // tener que reescribirlos.
 const LABELS_ENUM = {
-  estado: estados,
+  // El campo "estado" no comparte vocabulario entre ordenes y compras: una orden
+  // pasa a "en_progreso" y una compra a "en_curso". Se juntan los dos porque la
+  // unica clave que comparten dice lo mismo en las dos, y sin esto la fila
+  // terminaba mostrando "Pendiente -> en_curso", con un lado con label y el
+  // otro crudo.
+  estado: { ...estados, ...estadosCompra },
   prioridad: prioridades,
   tipo_mantenimiento: tiposMantenimiento,
 }

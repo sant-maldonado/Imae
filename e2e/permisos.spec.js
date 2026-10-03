@@ -7,6 +7,7 @@ import {
   hayCredencialesDeOperador,
   idDeTecnicoE2E,
   migracionDePermisosAplicada,
+  borrarOrdenPorRest,
 } from './helpers'
 
 // Guards de UI por rol. Estos tests no dependen del RLS: pasan igual antes de
@@ -82,7 +83,10 @@ test.describe('permisos por rol', () => {
 
     await page.click('button:has-text("Eliminar")')
     await page.click('button:has-text("Aceptar")')
-    await expect(page).toHaveURL('/ordenes')
+    // Aunque sea el admin, una orden con historial no se borra: el freno esta
+    // arriba de los permisos, porque es una question de evidencia y no de rol.
+    await expect(page.getByText(/el registro es el respaldo/i)).toBeVisible()
+    await expect(page).toHaveURL(/\/ordenes\/\d+$/)
   })
 
   test('el operador no puede crear, completar, editar ni borrar', async ({ page }) => {
@@ -237,21 +241,15 @@ test.describe('permisos por rol', () => {
       await tec.getByRole('button', { name: 'Guardar Cambios' }).click()
 
       await expect(tec).toHaveURL(new RegExp(`/ordenes/${ordenId}$`))
-      await expect(tec.getByText('Editada por el tecnico en el E2E')).toBeVisible()
+      await expect(tec.getByTestId('orden-descripcion')).toHaveText('Editada por el tecnico en el E2E')
 
       await ctxTecnico.close()
     } finally {
-      // El tecnico no puede borrar, asi que la limpieza la hace el admin. Sin
-      // esto cada corrida deja una orden huerfana en la base real.
+      // Ni el admin puede borrarla por UI una vez que tiene historial, y el
+      // tecnico menos: la limpieza va por REST. Sin esto cada corrida deja una
+      // orden huerfana en la base real.
       if (ordenId !== undefined) {
-        const ctxLimpieza = await browser.newContext({ baseURL })
-        const limp = await ctxLimpieza.newPage()
-        await login(limp)
-        await limp.goto(`/ordenes/${ordenId}`)
-        await limp.click('button:has-text("Eliminar")')
-        await limp.click('button:has-text("Aceptar")')
-        await expect(limp).toHaveURL('/ordenes')
-        await ctxLimpieza.close()
+        await borrarOrdenPorRest(ordenId)
       }
       await ctxAdmin.close()
     }

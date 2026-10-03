@@ -162,8 +162,10 @@ test.describe('Purchases CRUD', () => {
     await expect(historial).toBeVisible()
     const entrada = page.locator('h4:has-text("Historial de cambios") + div > div').first()
     await expect(entrada).toContainText('Estado cambiado')
-    await expect(entrada).toContainText('pendiente')
-    await expect(entrada).toContainText('en_curso')
+    // Con el label, no con el enum crudo: una compra va a "en_curso" y una orden
+    // a "en_progreso", y el historial muestra los dos como los ve el usuario.
+    await expect(entrada).toContainText('Pendiente')
+    await expect(entrada).toContainText('En Curso')
     // Los created_at son TIMESTAMPTZ: formatDate tiene que cortar la hora.
     await expect(entrada).toContainText(/\d{2}\/\d{2}\/\d{4}/)
 

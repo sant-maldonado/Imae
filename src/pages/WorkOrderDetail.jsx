@@ -314,8 +314,11 @@ export default function WorkOrderDetail() {
             </div>
           )}
           <div className="col-span-2">
-            <p className="text-slate-500 mb-1">Descripción</p>
-            <p className="text-slate-700 dark:text-slate-200">{orden.descripcion}</p>
+<p className="text-slate-500 mb-1">Descripción</p>
+      {/* Con testid porque el texto aparece dos veces en la pagina: en los datos
+          y en el historial, que muestra el valor nuevo del cambio. Un assert por
+          texto solo lo encuentra ambiguo. */}
+      <p data-testid="orden-descripcion" className="text-slate-700 dark:text-slate-200">{orden.descripcion}</p>
           </div>
         </div>
       </div>

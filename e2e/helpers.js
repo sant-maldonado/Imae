@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import { pedir, sesion, emailAdmin } from '../e2e-demo/rest.js'
 
 // Las credenciales vienen del .env (ver .env.example), no hardcodeadas: el
 // repo es publico y antes la contrasena de admin estaba escrita en los 10
@@ -87,3 +88,45 @@ async function loginCon(page, email, password) {
 // mientras no pasan los dias de reaparicion, asi que hay que sembrar un
 // timestamp, no un "1". Un "1" ya esta vencido y el overlay vuelve a aparecer.
 export { CLAVE_PROMPT } from './clave-prompt.js'
+
+// ---------------------------------------------------------------------------
+// Limpieza por REST.
+//
+// La app frena el borrado de una orden que ya tiene historial, y desde que cada
+// alta escribe su log "creada" eso es TODA orden: el boton Eliminar esta
+// bloqueado siempre. Es lo que hay que mostrarle a Calidad, pero deja a los
+// tests sin forma de limpiar lo que crean, y los E2E corren contra la base real.
+//
+// Por eso la limpieza va por REST con la misma sesion de admin que usa
+// e2e-demo/limpiar.mjs: el freno vive en la capa de la app, no en el RLS, asi
+// que el registro se borra igual. Si alguna vez el borrado se pone en la base,
+// esto deja de borrar y hay que avisarlo acá.
+export async function borrarOrdenPorRest(id) {
+  const { token } = await sesionAdmin()
+  await pedir('delete', `ordenes?id=eq.${id}`, undefined, token)
+}
+
+// Por titulo, para el afterEach, queTodavia no sabe el id.
+export async function borrarOrdenPorTitulo(titulo) {
+  const { token } = await sesionAdmin()
+  const filas = await pedir(
+    'get',
+    `ordenes?titulo=eq.${encodeURIComponent(titulo)}&select=id`,
+    undefined,
+    token,
+  )
+  if (!filas.length) return 0
+  await pedir('delete', `ordenes?id=in.(${filas.map((o) => o.id).join(',')})`, undefined, token)
+  return filas.length
+}
+
+let tokenAdmin = null
+async function sesionAdmin() {
+  // El token dura una hora y la suite tarda minutos: cachearlo evita un login
+  // por cada orden que hay que limpiar.
+  if (!tokenAdmin) {
+    const { email, password } = emailAdmin()
+    tokenAdmin = (await sesion(email, password)).token
+  }
+  return { token: tokenAdmin }
+}

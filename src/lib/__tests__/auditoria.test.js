@@ -11,6 +11,15 @@ describe('valorDelLog', () => {
     expect(valorDelLog('tipo_mantenimiento', 'preventivo')).toBe('Preventivo')
   })
 
+  it('traduce tambien el estado de las compras, que no comparte vocabulario', () => {
+    // Una orden va a en_progreso y una compra a en_curso. Sin las dos en el
+    // mismo mapa, la fila del historial de una compra salia "Pendiente ->
+    // en_curso": un lado con label y el otro crudo.
+    expect(valorDelLog('estado', 'en_curso')).toBe('En Curso')
+    expect(valorDelLog('estado', 'en_progreso')).toBe('En Progreso')
+    expect(valorDelLog('estado', 'pendiente')).toBe('Pendiente')
+  })
+
   it('deja pasar lo que ya esta escrito', () => {
     expect(valorDelLog('tecnico', 'Marta López')).toBe('Marta López')
     expect(valorDelLog('titulo', 'Ajuste de mesa')).toBe('Ajuste de mesa')
