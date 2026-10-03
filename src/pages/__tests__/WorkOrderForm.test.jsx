@@ -5,11 +5,13 @@ import { TestWrapper } from '../../test/TestWrapper'
 import WorkOrderForm from '../WorkOrderForm'
 
 const mockMutateAsync = vi.fn()
+const mockLogMutate = vi.fn()
 const mockNavigate = vi.fn()
 const mockGetUser = vi.fn()
 
 vi.mock('../../hooks/useApi', () => ({
   useCreateOrden: () => ({ mutateAsync: mockMutateAsync, isPending: false }),
+  useCreateLog: () => ({ mutate: mockLogMutate }),
   useEquipos: () => ({ data: [{ id: 'e1', nombre: 'Torno CNC', codigo: 'TC-001' }], isLoading: false }),
   useTecnicos: () => ({
     data: [

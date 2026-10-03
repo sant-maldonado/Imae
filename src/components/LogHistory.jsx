@@ -1,16 +1,5 @@
-import { formatDate } from '../lib/constants'
-
-const accionLabels = {
-  creada: 'Creada',
-  actualizada: 'Actualizada',
-  estado_cambiado: 'Estado cambiado',
-  eliminada: 'Eliminada',
-}
-
-const campoLabels = {
-  estado: 'Estado',
-  prioridad: 'Prioridad',
-}
+import { formatDateTime } from '../lib/constants'
+import { accionLabels, campoLabels, valorDelLog } from '../lib/auditoria'
 
 export default function LogHistory({ logs }) {
   if (!logs || logs.length === 0) return null
@@ -25,10 +14,10 @@ export default function LogHistory({ logs }) {
             <div className="flex-1 min-w-0">
               <span className="font-medium text-slate-600 dark:text-slate-300">{accionLabels[log.accion] || log.accion}</span>
               {log.campo && (
-                <> — {campoLabels[log.campo] || log.campo}: <span className="text-slate-400">{log.valorAnterior}</span> → <span className="text-slate-600 dark:text-slate-300">{log.valorNuevo}</span></>
+                <> — {campoLabels[log.campo] || log.campo}: <span className="text-slate-400">{valorDelLog(log.campo, log.valorAnterior)}</span> → <span className="text-slate-600 dark:text-slate-300">{valorDelLog(log.campo, log.valorNuevo)}</span></>
               )}
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
-                {formatDate(log.createdAt)} — {log.usuarioNombre}
+                {formatDateTime(log.createdAt)} — {log.usuarioNombre}
               </p>
             </div>
           </div>

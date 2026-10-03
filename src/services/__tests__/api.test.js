@@ -280,3 +280,42 @@ describe('permisos en la capa de API', () => {
     expect(supabase.from).not.toHaveBeenCalled()
   })
 })
+
+// logs_orden y fotos_orden cuelgan de la orden con ON DELETE CASCADE
+// (schema.sql:75,85), asi que borrar una orden con evidencia se lleva el
+// historial y las fotos. Para Calidad eso es borrar el respaldo, y por eso el
+// borrado se frena en cuanto hay algo que registrar.
+describe('deleteOrden con evidencia', () => {
+  it('no borra si la orden tiene historial', async () => {
+    const chain = makeChain({ data: null, count: 3, error: null })
+    supabase.from.mockReturnValue(chain)
+
+    await expect(api.deleteOrden(7)).rejects.toThrow(/el registro es el respaldo/)
+    expect(chain.delete).not.toHaveBeenCalled()
+  })
+
+  it('no borra si la orden tiene fotos', async () => {
+    const chain = makeChain({ data: null, count: 2, error: null })
+    supabase.from.mockReturnValue(chain)
+
+    await expect(api.deleteOrden(7)).rejects.toThrow(/no se puede eliminar/)
+    expect(chain.delete).not.toHaveBeenCalled()
+  })
+
+  it('borra cuando no hay ni historial ni fotos', async () => {
+    const chain = makeChain({ data: null, count: 0, error: null })
+    supabase.from.mockReturnValue(chain)
+
+    await api.deleteOrden(7)
+
+    expect(chain.delete).toHaveBeenCalled()
+  })
+
+  it('traduce el 42501 de los conteos, no solo el del DELETE', async () => {
+    // Los conteos y el DELETE van por caminos separados: si el permiso falla en
+    // el conteo, el error tiene que salir igual de legible.
+    supabase.from.mockReturnValue(makeChain({ data: null, count: 0, error: { code: '42501', message: 'denied' } }))
+
+    await expect(api.deleteOrden(7)).rejects.toThrow(SIN_PERMISO)
+  })
+})

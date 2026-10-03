@@ -62,3 +62,19 @@ export function formatDate(dateStr) {
   // arrastra con la hora. Hay que cortar en la 'T'.
   return `${d.split('T')[0]}/${m}/${y}`
 }
+
+// La hora va en hora local, no en la del servidor. Los logs guardan TIMESTAMPTZ
+// y PostgREST los devuelve con "+00:00", asi que mostrar el numero tal cual
+// correria el registro segun el UTC del servidor y no segun la hora del taller,
+// que es la que sirve para reconstruir un hecho.
+//
+// Un campo DATE (como fecha_programada) viene sin hora: "2026-10-15". Esos NO
+// pasan por Date, porque new Date('2026-10-15') se interpreta como medianoche
+// UTC y en un huso negativo como el de Argentina se imprimiria un dia antes.
+export function formatDateTime(dateStr) {
+  if (!dateStr) return ''
+  if (!dateStr.includes('T')) return formatDate(dateStr)
+  const d = new Date(dateStr)
+  if (Number.isNaN(d.getTime())) return formatDate(dateStr)
+  return d.toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })
+}

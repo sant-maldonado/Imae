@@ -118,7 +118,38 @@ export async function editarOrden(id, data) {
   return camelize(orden)
 }
 
+// logs_orden y fotos_orden cuelgan de la orden con ON DELETE CASCADE
+// (schema.sql:75,85), asi que un DELETE se lleva el historial y las fotos junto
+// con el registro. Para un area de Calidad eso no es un borrado: es borrar la
+// evidencia de lo que paso.
+//
+// Por eso el borrado se frena en cuanto hay algo que registrar. Y no hace falta
+// una tabla de auditoria aparte para cubrir el borrado: si solo se puede borrar
+// lo que no tiene evidencia, no queda nada del borrado que auditar.
+//
+// La garantia es de la app, no de la base: un DELETE por REST la esquivaria. Para
+// que sea UVBaja de sistema hace falta un trigger, que es el paso siguiente.
+// limpiar.mjs borra por REST a proposito: es el script de limpieza de datos de
+// prueba y tiene que poder borrar si o si.
 export async function deleteOrden(id) {
+  // head: true hace que PostgREST devuelva solo el conteo y no las filas: para
+  // preguntar "hay evidencia" no hace falta traerla.
+  const [resLogs, resFotos] = await Promise.all([
+    supabase.from('logs_orden').select('id', { count: 'exact', head: true }).eq('orden_id', id),
+    supabase.from('fotos_orden').select('id', { count: 'exact', head: true }).eq('orden_id', id),
+  ])
+  lanzar(resLogs.error)
+  lanzar(resFotos.error)
+
+  const conHistorial = resLogs.count || 0
+  const conFotos = resFotos.count || 0
+
+  if (conHistorial || conFotos) {
+    throw new Error(
+      'Esta orden tiene historial o fotos de evidencia, y no se puede eliminar: el registro es el respaldo. Exportala en PDF para archivarla.'
+    )
+  }
+
   const { error } = await supabase.from('ordenes').delete().eq('id', id)
   lanzar(error)
   return true

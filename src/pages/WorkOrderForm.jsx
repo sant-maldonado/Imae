@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useCreateOrden, useEquipos, useTecnicos } from '../hooks/useApi'
+import { useCreateOrden, useCreateLog, useEquipos, useTecnicos } from '../hooks/useApi'
 import { supabase } from '../lib/supabase'
 import { uploadToCloudinary } from '../lib/cloudinary'
 import { useToast } from '../components/Toast'
@@ -16,6 +16,11 @@ export default function WorkOrderForm() {
   const { data: tecnicos } = useTecnicos()
   const { perfil } = useAuth()
   const createOrden = useCreateOrden()
+  // El id de la orden todavia no existe mientras se esta creando el formulario,
+  // asi que este useCreateLog no invalida nada: la escritura del log es la que
+  // importa y la pagina siguiente ya no consulta el historial. Sin este log, el
+  // alta de una orden no dejaba ningun rastro de quien la cargo.
+  const createLog = useCreateLog()
 
   const esTecnico = perfil?.rol === 'tecnico'
   const miId = miTecnicoId(tecnicos, perfil)
@@ -55,6 +60,11 @@ export default function WorkOrderForm() {
     try {
       const orden = await createOrden.mutateAsync({ ...form, tecnicoId })
       const ordenId = orden.id
+
+      // Va recien creada la orden, y no al final, porque si despues falla la
+      // subida de una foto la orden queda creada igual y tiene que tener su
+      // registro. Sin campo: lo que importa del alta es quien y cuando.
+      createLog.mutate({ orden_id: ordenId, accion: 'creada' })
 
       if (fotos.length > 0) {
         const { data: { user } } = await supabase.auth.getUser()

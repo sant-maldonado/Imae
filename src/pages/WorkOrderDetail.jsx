@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useOrden, useDeleteOrden, useCompletarOrden, useFotos, useLogs, useCreateLog } from '../hooks/useApi'
-import { estados, prioridades, tiposMantenimiento, priorityColors, statusColors, formatDate } from '../lib/constants'
+import { estados, prioridades, tiposMantenimiento, priorityColors, statusColors, formatDate, formatDateTime } from '../lib/constants'
+import { accionLabels, campoLabels, valorDelLog } from '../lib/auditoria'
 import { SkeletonCard } from '../components/Skeleton'
 import { cargarPdf } from '../lib/pdf'
 import { useToast } from '../components/Toast'
@@ -64,7 +65,7 @@ export default function WorkOrderDetail() {
 
     doc.setFontSize(10)
     doc.text(`N° ${orden.id}`, 14, 30)
-    doc.text(`Fecha de creación: ${orden.fechaCreacion}`, 14, 36)
+    doc.text(`Fecha de creación: ${formatDateTime(orden.fechaCreacion)}`, 14, 36)
 
     doc.setFontSize(12)
     doc.text('Datos generales', 14, 48)
@@ -78,8 +79,8 @@ export default function WorkOrderDetail() {
         ['Tipo de mantenimiento', tipoLabel],
         ['Equipo', orden.equipoNombre],
         ['Técnico asignado', orden.tecnicoNombre],
-        ['Fecha programada', orden.fechaProgramada],
-        ['Fecha de completación', orden.fechaCompletada || 'Pendiente'],
+        ['Fecha programada', formatDate(orden.fechaProgramada) || 'Sin programar'],
+        ['Fecha de completación', orden.fechaCompletada ? formatDateTime(orden.fechaCompletada) : 'Pendiente'],
       ],
       theme: 'plain',
       styles: { fontSize: 10 },
@@ -93,9 +94,60 @@ export default function WorkOrderDetail() {
     const descLines = doc.splitTextToSize(orden.descripcion, 180)
     doc.text(descLines, 14, doc.lastAutoTable.finalY + 20)
 
+// El historial va en el PDF, y no solo en pantalla. Antes el componente ya traia
+    // los logs (linea 18) y los mostraba en la ficha, pero el PDF los ignoraba: el
+    // respaldo en papel llevaba las fotos y no llevaba QUIEN ni CUANDO. Para un area
+    // de Calidad ese papel no era un registro, era una foto del estado.
+    const historial = logs || []
+    const pageH = doc.internal.pageSize.getHeight()
+
+    // Un solo cursor que baja a medida que se escribe. Encadenar
+    // doc.lastAutoTable.finalY en cada bloque hacia el PDF-illegible rapido: cada
+    // seccion tiene que saber donde termino la anterior.
+    let y = doc.lastAutoTable.finalY + 20 + descLines.length * 5
+
+    if (historial.length > 0) {
+      y += 8
+      if (y > pageH - 60) {
+        doc.addPage()
+        y = 20
+      }
+
+      doc.setFontSize(12)
+      doc.text('Historial de cambios', 14, y)
+      y += 6
+
+      autoTable(doc, {
+        startY: y,
+        // Los logs vienen del mas nuevo al mas viejo, que es como se leen en
+        // pantalla. Acá se dan vuelta para que el papel se lea en orden de reloj.
+        body: [...historial]
+          .reverse()
+          .map((log) => [
+            formatDateTime(log.createdAt),
+            log.usuarioNombre || '—',
+            accionLabels[log.accion] || log.accion,
+            log.campo ? campoLabels[log.campo] || log.campo : '',
+            log.campo ? valorDelLog(log.campo, log.valorAnterior) : '',
+            log.campo ? valorDelLog(log.campo, log.valorNuevo) : '',
+          ]),
+        head: [['Fecha y hora', 'Usuario', 'Acción', 'Campo', 'Anterior', 'Nuevo']],
+        theme: 'grid',
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fontSize: 8 },
+        columnStyles: {
+          0: { cellWidth: 26 },
+          1: { cellWidth: 26 },
+          4: { cellWidth: 28 },
+          5: { cellWidth: 28 },
+        },
+      })
+
+      y = doc.lastAutoTable.finalY
+    }
+
     if (fotos && fotos.length > 0) {
-      let y = doc.lastAutoTable.finalY + 20 + descLines.length * 5 + 8
-      const pageH = doc.internal.pageSize.getHeight()
+      y += 8
 
       if (y > pageH - 40) {
         doc.addPage()
@@ -135,6 +187,16 @@ export default function WorkOrderDetail() {
         }
       }
     }
+
+    // El pie dice de que registro salio este papel y cuando se genero. Sin eso,
+    // un PDF suelto de una orden es indistinguible de cualquier otro: no se sabe
+    // si es el actual o el de la semana pasada.
+    doc.setFontSize(7)
+    doc.text(
+      `Documento generado por IMAE el ${formatDateTime(new Date().toISOString())} a partir del registro N° ${orden.id}`,
+      14,
+      doc.internal.pageSize.getHeight() - 8
+    )
 
     doc.save(`orden_trabajo_${orden.id}.pdf`)
   }

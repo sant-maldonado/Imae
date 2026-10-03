@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { useOrden, useEditarOrden, useEquipos, useTecnicos } from '../hooks/useApi'
+import { useOrden, useEditarOrden, useCreateLog, useEquipos, useTecnicos } from '../hooks/useApi'
 import { useToast } from '../components/Toast'
 import { SkeletonCard } from '../components/Skeleton'
 import { HiOutlineArrowLeft } from 'react-icons/hi2'
 import { useAuth } from '../context/AuthContext'
+import { camposEditados } from '../lib/auditoria'
 
 const CAMPO = 'w-full border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200'
 const LABEL = 'block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1'
@@ -30,6 +31,7 @@ function FormOrden({ orden }) {
   const { data: tecnicos } = useTecnicos()
   const { perfil } = useAuth()
   const editarOrden = useEditarOrden()
+  const createLog = useCreateLog(id)
 
   const esTecnico = perfil?.rol === 'tecnico'
   // Una orden completada queda congelada para el tecnico. Supervision la sigue
@@ -62,6 +64,12 @@ function FormOrden({ orden }) {
     if (esTecnico) delete data.tecnicoId
     try {
       await editarOrden.mutateAsync({ id, data })
+      // Un log por campo que realmente cambio. Si no cambio nada no se escribe
+      // ninguno: un "Actualizada" sin detalle no prueba nada y ensucia el
+      // historial, que es lo que Calidad va a leer.
+      camposEditados(orden, data, { equipos, tecnicos }).forEach((cambio) => {
+        createLog.mutate({ orden_id: id, accion: 'actualizada', ...cambio })
+      })
       toast.success('Orden actualizada')
       navigate(`/ordenes/${id}`)
     } catch (err) {

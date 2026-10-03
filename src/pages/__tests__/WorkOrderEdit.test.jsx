@@ -5,6 +5,7 @@ import { TestWrapper } from '../../test/TestWrapper'
 import WorkOrderEdit from '../WorkOrderEdit'
 
 const mockMutateAsync = vi.fn()
+const mockLogMutate = vi.fn()
 const mockNavigate = vi.fn()
 
 const mockAuth = vi.hoisted(() => ({ perfil: { nombre: 'Admin', email: 'admin@imaemantenimiento.com', rol: 'admin' } }))
@@ -35,6 +36,7 @@ vi.mock('../../hooks/useApi', () => ({
     isLoading: false,
   }),
     useEditarOrden: () => ({ mutateAsync: mockMutateAsync, isPending: false }),
+  useCreateLog: () => ({ mutate: mockLogMutate }),
     useEquipos: () => ({ data: [{ id: 'e1', nombre: 'Torno CNC', codigo: 'TC-001' }] }),
     useTecnicos: () => ({
       data: [
