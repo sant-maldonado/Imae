@@ -20,6 +20,10 @@ export default defineConfig({
   timeout: 10 * 60 * 1000,
   reporter: [['list']],
   outputDir: 'test-results-demo',
+  // Despierta produccion antes de la camara. Sin esto el video arranca
+  // grabando contra una instancia de Vercel dormida y se pierden los primeros
+  // segundos en blanco. Ver e2e-demo/calentar.mjs.
+  globalSetup: './e2e-demo/calentar.mjs',
   // Copia y convierte el .webm antes de que Playwright borre outputDir en la
   // proxima corrida. Sin esto, grabar el segundo video borra el primero.
   globalTeardown: './e2e-demo/teardown.mjs',

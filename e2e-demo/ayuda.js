@@ -239,7 +239,12 @@ export async function cartela(page, titulo, bajada, ms = 3200) {
     { t: titulo, b: bajada }
   )
   await page.waitForTimeout(Ritmo(ms))
-  escenas.push({ ini, fin: reloj(), texto: `${titulo} — ${bajada}` })
+  // Solo la bajada, nunca el titulo. El titulo de las tres cartelas de los dos
+  // videos es "IMAE", y edge-tts no lo lee como palabra: lo deletrea letra por
+  // letra. En pantalla queda, que es lo que importa, pero la voz arranca en la
+  // bajada. Si alguna vez una cartela necesita que se narre el titulo, se
+  // escribe en la bajada.
+  escenas.push({ ini, fin: reloj(), texto: bajada })
   await page.evaluate(() => document.getElementById('demo-card')?.classList.remove('visible'))
   await marcarMarca(page, true)
 }

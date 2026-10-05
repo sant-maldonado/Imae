@@ -53,7 +53,7 @@ test('video de presentacion: admin', async ({ page }) => {
     page,
     'IMAE',
     'Control de mantenimiento: órdenes, equipos, compras y reportes del taller',
-    5060
+    4000
   )
 
   // ------------------------------------------------------------------ puente
@@ -200,7 +200,7 @@ test('video de presentacion: admin', async ({ page }) => {
 
   // ----------------------------------------------------------------- cierre
   // El dominio no se narra (suena mal en voz alta) pero queda en pantalla.
-  await cartela(page, 'IMAE', 'Control de mantenimiento hoy · Registro de programas, el paso siguiente', 4700)
+  await cartela(page, 'IMAE', 'Control de mantenimiento hoy · Órdenes, equipos, compras y reportes', 3900)
 
   const { guion, srt } = escribirGuion('admin')
   console.log(`guion: ${guion}`)

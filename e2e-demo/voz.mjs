@@ -74,10 +74,10 @@ function sanear(texto) {
     .replace(/\b[\w-]+\.[\w-]+\.[a-z]{2,}(?:\/\S*)?/gi, '')
     .replace(/[—–]/g, '.')
     .replace(/[·•]/g, ',')
-    // El guion de la cartela es "IMAE — bajada", y al pasarlo a punto queda
-    // "IMAE . bajada". El espacio de antes del punto hay que sacarlo aparte:
-    // la regla de mas abajo que junta ". ," no lo agarra porque no hay coma
-    // todavia.
+    // Un guion puede llegar con " ." en cualquier parte: los puntos de
+    // elipsis, las bajadas que ya traen un punto, los cortes del guion.md. La
+    // regla de mas abajo que junta ". ," no lo agarra porque todavia no hay
+    // coma, asi que va aparte.
     .replace(/\s+\./g, '.')
     .replace(/\s*,\s*,+/g, ',')
     .replace(/\.\s*,/g, '.')
@@ -413,8 +413,10 @@ function medir() {
       const textos = [...args.matchAll(/'([^']*)'/g)].map((x) => x[1])
       const ms = Number((args.match(/(\d{3,5})\s*$/m) || [])[1])
       if (!textos.length || !ms) continue
-      // cartela lleva titulo y bajada; los dos se leen en voz alta.
-      const texto = m[1] === 'cartela' ? `${textos[0]}. ${textos[1]}` : textos[0]
+      // La cartela aporta titulo y bajada, pero la voz solo dice la bajada: el
+      // titulo es "IMAE" y edge-tts lo deletrea. Tiene que coincidir con lo que
+      // cartela() mete en las escenas, o se mide un texto que el video no narra.
+      const texto = m[1] === 'cartela' ? textos[1] : textos[0]
       tabla.push({ rol, tipo: m[1], limpio: sanear(texto), ms })
     }
   }

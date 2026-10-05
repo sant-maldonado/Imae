@@ -35,6 +35,7 @@ npx playwright test --config=playwright.demo.config.js tecnico
 node e2e-demo/voz.mjs tecnico
 node e2e-demo/limpiar.mjs --si                                # chequear (no borra)
 node e2e-demo/limpiar.mjs                                     # borrar de verdad
+node e2e-demo/pdf-muestra.mjs                                  # rehacer el PDF de 5 filas
 ```
 
 - Un spec por corrida. Playwright limpia `outputDir` al empezar, así que el
@@ -46,11 +47,30 @@ node e2e-demo/limpiar.mjs                                     # borrar de verdad
   próxima corrida lo borra. La frase de cada escena vive en el
   `escena(page, 'texto', ms)` del spec. Es un error fácil de cometer porque el
   `.guion.md` parece el documento maestro.
-- **Producción tiene latencia variable.** Se la midio respondiendo en 34 s
-  cuando normalmente va en 80 ms (arranque en frío de Vercel). Por eso
-  `TIMEOUT_NAVEGACION` es de 60 s, y si una grabación sale con varios segundos
-  de pantalla en blanco al principio, no es un bug del guion: es que la primera
-  carga tardó. Re-correr cuando la red está rápida.
+- **Las cartelas no narran el título.** Las tres cartelas de los dos videos se
+  llaman "IMAE", y `edge-tts` no lo lee como palabra: lo deletrea letra por
+  letra. `cartela()` mete solo la bajada en las escenas, y `voz.mjs --medir`
+  tiene que medir exactamente lo mismo o mide un texto que el video no dice. En
+  pantalla "IMAE" sigue estando; lo único que se sacó fue la voz. Si alguna vez
+  una cartela necesita que el título se narre, se escribe en la bajada.
+- **El blanco del principio se recorta, no se re-corre.** La causa no es la red.
+  Playwright prende la cámara al crear el contexto del navegador, antes de que el
+  test haga nada, así que entra todo el tiempo que tarda el navegador en bajar y
+  ejecutar el bundle de 545 KB con la caché fría: 3,4 s medidos con el server
+  respondiendo en 211 ms. `calentar.mjs` (el `globalSetup`) despeja la
+  instancia de Vercel y evita el arranque en frío de 34 s, pero **no** arregla el
+  blanco, y no hay forma de empezar a grabar más tarde porque la cámara se
+  prende sola. Lo resuelve `teardown.mjs`: mide con `signalstats` el primer
+  frame que tiene contraste, recorta el `.mp4` desde ahí y corre el `.srt` y el
+  `.guion.md` el mismo número de segundos, para que la voz no se desfaste. Dos
+  cosas se siguen de ahí: los tiempos del `.srt` de `videos/` no son los que
+  escribió `escribirGuion()` sino esos menos el recorte, y el recorte solo pasa
+  si el blanco supera `UMBRAL = 0.6` (si no, no se toca nada). Grabando el
+  técnico después del admin el blanco no aparece, porque el bundle ya está en la
+  caché del disco.
+- **`orden-muestra.pdf` lo pisa cada grabación del admin**, que deja el PDF de la
+  orden que acaba de crear, de 2 filas. El que se entrega es el de 5 filas y sale
+  de `pdf-muestra.mjs`, así que hay que correrlo al final.
 - Sale `.mp4` (H.264/yuv420p, lo que WhatsApp reproduce), `.webm` crudo,
   `.srt` y `.guion.md` con los tiempos reales, más `orden-muestra.pdf`.
 - **Los videos van con voz.** `voz.mjs` lee el `.srt` de la corrida, genera un

@@ -39,7 +39,7 @@ test('video de presentacion: tecnico', async ({ page }) => {
   await montarOverlay(page)
 
   // ---------------------------------------------------------------- portada
-  await cartela(page, 'IMAE', 'Para el técnico, en el taller, desde el celular', 3840)
+  await cartela(page, 'IMAE', 'Para el técnico, en el taller, desde el celular', 2800)
 
   // ----------------------------------------------------------------- ingreso
   // escena() y no leyenda(): la segunda solo pinta el texto y no lo anota en el
