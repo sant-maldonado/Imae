@@ -52,22 +52,16 @@ test('video de presentacion: admin', async ({ page }) => {
   await cartela(
     page,
     'IMAE',
-    'Control de mantenimiento: órdenes, equipos, compras y reportes del taller',
+    'Control de mantenimiento: compras, equipos, órdenes y reportes del taller',
     4000
   )
 
-  // ------------------------------------------------------------------ puente
-  // Va sobre la pantalla de login, antes de entrar. Es lo primero que escucha
-  // el director, asi que tiene que decir de que se trata antes de mostrar nada.
-  await escena(
-    page,
-    'Hoy vas a ver el mantenimiento. El modelo de registro es el mismo que necesita el control de programas',
-    5150
-  )
-
   // ----------------------------------------------------------------- ingreso
-  // Sin frase: la pantalla de login ya se entiende sola, y el puente recien
-  // dicho loadia decir lo mismo de otra forma.
+  // La frase va sobre el formulario y no despues: "te logueas rapido" mientras
+  // se ve el login es justo lo que pasa a continuacion. El puente que estaba
+  // antes ("hoy vas a ver el mantenimiento...") ya no esta: la portada dice de
+  // que se trata el video, asi que la frase repetia lo mismo.
+  await escena(page, 'Te logueás rápido', 2000)
   await ingresar(page, process.env.E2E_EMAIL, process.env.E2E_PASSWORD)
   await marcaVisible(page, true)
 
@@ -183,11 +177,20 @@ test('video de presentacion: admin', async ({ page }) => {
   // ---------------------------------------------------------------- equipos
   await irA(page, 'Equipos')
   await expect(page.getByText('Torno CNC')).toBeVisible({ timeout: 20000 })
+  // El "¿esta cargada?" ya lo responde el assert de arriba: la pagina devuelve
+  // el skeleton o la grilla, nunca las dos. Lo que falta es que el navegador
+  // termine de pintar ese cambio, y el video arranca a grabar en el medio del
+  // salto, que es lo que hace que la frase no vaya con lo que se ve. Son los
+  // mismos 700ms que alcanza en una pagina sin graficos; en Reportes hacen
+  // falta 2600 porque Recharts tiene que medir el contenedor.
+  await page.waitForTimeout(700)
   await escena(page, 'El parque de máquinas, con el estado de cada una', 2880)
 
   // ---------------------------------------------------------------- compras
   await irA(page, 'Compras')
   await expect(page.getByText('+ Nueva Compra')).toBeVisible({ timeout: 20000 })
+  // Mismo salto desde el skeleton que en Equipos.
+  await page.waitForTimeout(700)
   await escena(page, 'Compras de repuestos, con su historial de pedidos', 2750)
 
   // --------------------------------------------------------------- reportes
@@ -200,7 +203,7 @@ test('video de presentacion: admin', async ({ page }) => {
 
   // ----------------------------------------------------------------- cierre
   // El dominio no se narra (suena mal en voz alta) pero queda en pantalla.
-  await cartela(page, 'IMAE', 'Control de mantenimiento hoy · Órdenes, equipos, compras y reportes', 3900)
+  await cartela(page, 'IMAE', 'Control de mantenimiento hoy · Compras, equipos, órdenes y reportes', 3900)
 
   const { guion, srt } = escribirGuion('admin')
   console.log(`guion: ${guion}`)
