@@ -61,7 +61,7 @@ test('video de presentacion: admin', async ({ page }) => {
   // se ve el login es justo lo que pasa a continuacion. El puente que estaba
   // antes ("hoy vas a ver el mantenimiento...") ya no esta: la portada dice de
   // que se trata el video, asi que la frase repetia lo mismo.
-  await escena(page, 'Te logueás rápido', 2000)
+  await escena(page, 'Un acceso sencillo', 1750)
   await ingresar(page, process.env.E2E_EMAIL, process.env.E2E_PASSWORD)
   await marcaVisible(page, true)
 
